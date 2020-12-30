@@ -2,8 +2,6 @@
 > 인프런 스프링 시큐리티 강좌를(백기선님) 학습하고 정리한 내용입니다.
 
 ## [섹션 0. 스프링 시큐리티: 폼 인증](#섹션-0.-스프링-시큐리티:-폼-인증)
-* [강좌 자료](#강좌-자료)
-* [폼 인증 예제 살펴보기](#폼-인증-예제-살펴보기)
 * [스프링 웹 프로젝트 만들기](#스프링-웹-프로젝트-만들기)
 * [스프링 시큐리티 연동](#스프링-시큐리티-연동)
 * [스프링 시큐리티 설정하기](#스프링-시큐리티-설정하기)
@@ -60,15 +58,70 @@
 
 ## 섹션 0. 스프링 시큐리티: 폼 인증
 
-### 강좌 자료
-
-### 폼 인증 예제 살펴보기
-
-### 스프링 웹 프로젝트 만들기
-
 ### 스프링 시큐리티 연동
 
+* 스프링 부트 환경에서 스프링 시큐리티 추가 방법 (maven)
+    * ```maven
+      <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+      ```
+
+
+#### 스프링 시큐리티의 의존성 추가 시 일어나는 일들
+* 서버가 기동되면 스프링 시큐리티의 초기화 작업 및 보안 설정이 이루어진다
+* 별도의 설정이나 구현을 하지 않아도 기본적인 웹 보안 기능이 현재 시스템에 연동되어 작동함
+    1. `모든 요청은 인증이 되어야 자원에 접근이 가능하다`
+    2. 인증 방식은 `폼 로그인` 방식과 `httpBasic 로그인` 방식을 제공한다
+    3. 기본 로그인 페이지 제공한다 (/login)
+    4. 기본 계정 한 개 제공한다 – username : user / password : 랜덤 문자열
+
+
+> Using generated security password: __40f5bd88-a7f3-4d6f-916d-bfd7f142b9f8__
+
+스프링 시큐리티가 기본적으로 제공하는 `계정`의 패스워드. 로그인 할 때 사용
+
+> ID: __user__  
+> password __40f5bd88-a7f3-4d6f-916d-bfd7f142b9f8__
+
+
+`http://localhost:8080/login` 로 접속시 다음과 같이 사용
+![](img/2020-12-18-23-14-40.png)
+
+
+<br>
+<br>
+![](img/2020-12-18-23-19-52.png)
+
+---
+
 ### 스프링 시큐리티 설정하기
+
+스프링 시큐리티를 설정할 때는, 보통 `WebSecurityConfigurerAdapter` 를 상속 받은 configure 클래스를 새로 작성 한다.
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+    }
+}
+
+```
+* EnableWebSecurity : 웹 보안 활성 어노테이션
+* 보통 WebSecurityConfigurerAdapter를 상속받은 메소드들을 오버라이딩 하는 방식으로 설정한다.
+```java
+@Override
+    protected void configure(HttpSecurity http) throws Exception {
+        // ex) 루트로 오는 요청과 info로 오는 요청은 인증을 거치지 않아도 상관 없다는 설정
+        http.authorizeRequests()
+                .mvcMatchers("/", "/info").permitAll();
+    }
+
+```
 
 ### 스프링 시큐리티 커스터마이징: 인메모리 유저 추가
 
