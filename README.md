@@ -541,12 +541,95 @@ authorities = {Collections$UnmodifiableRandomAccessList@10713}  size = 1
 
 ## AuthenticationManager와 Authentication
 ### 스프링 시큐리티에서 인증(Authentication)은 `AuthenticationManager`가 한다
-AuthenticationManager는 authenticate 메서드 하나밖에 없다.
+- ` AuthenticationManager가 Authentication 객체를 만들고 인증을 처리한다.`
+  
+- AuthenticationManager : 인터페이스 
+- AuthenticationManager는 authenticate 메서드 하나밖에 없다.
 
 > Authentication authenticate(Authentication authentication) throws AuthenticationException;
 
 * 인자로 받은 Authentication​이 `​유효한 인증인지 확인​`하고 `​Authentication 객체를 리턴​`한다.
+ 
 * 인증을 확인하는 과정에서 비활성 계정, 잘못된 비번, 잠긴 계정 등의 에러를 던질 수 있다
+
+- AuthenticationManager 인터페이스를 구현하는 객체 
+  - ProviderManager
+  - 또는 AuthenticationManager 구현
+  - AuthenticationManager 직접 구현할 필요는 없지만,  
+    ProviderManager 클래스를 보면서 어떻게 인증이 이루어지는지 알 수 있다.
+
+<br>
+
+## > 인자로 받은 Authentication
+* 사용자가 입력한 인증에 필요한 정보(username, password)로 만든 객체. (폼 인증인 경우)
+
+* Authentication
+    * Principal: “keesun”
+    * Credentials: “123”
+## > 유효한 인증인지 확인
+
+* 사용자가 입력한 password가 UserDetailsService를 통해 읽어온 UserDetails 객체에 들어있는 password와 일치하는지 확인
+
+* 해당 사용자 계정이 잠겨 있진 않은지, 비활성 계정은 아닌지 등 확인
+
+## > Authentication 객체를 리턴
+* Authentication
+    * Principal: UserDetailsService에서 리턴한 그 객체 (User)
+    * Credentials:
+    * GrantedAuthorities
+
+## > 폼 로그인을 한다면, 인증이 일어나는 순서
+
+-> AuthenticationManager를 구현한 ProviderManager가 인증 수행
+
+1. ProviderManager.authenticate(Authentication `authentication`) 메소드 내에서 인증 수행 
+   *  인자로 받은 authentication은 우리가 폼에서 입력한 정보   
+      (UsernamePasswordAuthenticationToken)
+
+2.  authentication 인증 객체는 Provider가 처리하는데, 
+    ProviderManager가 가진 `List<AuthenticationProvider> providers` 중에  
+    현재 인증 객체를 처리 할 수 있는 Provider가 없으면 parent로 간다.  
+    (다른 Provider가 처리할 수 있게, 링크드 리스트 처럼 연결)
+    ```java
+    if (result == null && this.parent != null) {        
+        result = this.parent.authenticate(authentication);
+    ```
+3. parent Provider에서 다시 인증 할 수 있는지 확인한다. (다른 Provider 클래스)
+4. 다른 Provider가 인증을 처리 할 수 있다면, UserDetails서비스를 사용해서 인증한다.  
+   * AbstractUserDetailsAuthenticationProvider.authenticate() 메서드 
+
+5. 캐시된 유저가 있나 등을 확인하고, retrieveUser() 메서드를 호출하여 Provider 안으로 들어간다.(예제는 DaoAuthenticationProvider)
+6. 이 Provider의 `protected final UserDetails retrieveUser` 메소드에서   
+   사용하는 UserDetailsService가 우리가 만든 UserDetailsService를 구현한 AccountService 이다 
+```java
+// DaoAuthenticationProvider 클래스의 retrieveUser 메서드
+ protected final UserDetails retrieveUser(String username, 
+                                          UsernamePasswordAuthenticationToken authentication) 
+                                          throws AuthenticationException {
+    this.prepareTimingAttackProtection();
+    try {
+        UserDetails loadedUser = this.getUserDetailsService().loadUserByUsername(username); // <<<<
+        if (loadedUser == null) {
+            throw new InternalAuthenticationServiceException("UserDetailsService returned null, 
+                                                             which is an interface contract violation");
+        } else {
+            return loadedUser;
+        }
+    }
+}
+```
+
+7. 이후 추가적인 체크를 한다 (계정이 lock인지 등)
+8. 무사히 다 통과한다면 result 라는 `authentication 객체`를 리턴하는데,  
+   이 `authentication 객체`가 우리가 UserDetailsService를 구현한 구현체인  
+   AccountService에서 loadUserByUsername 메서드의 리턴값인 `UserDetails`이다. 
+   *  이 `UserDetails` 객체 가 Authencation 안에 들어가는 `principal`객체이다
+
+> ProviderManager의 authenticate 메서드에서 리턴한 result 객체가 인증이 되면,   
+> principal이 되어 authentication 객체가 되고  
+> SecurityContextHolder.getContext().getAuthentication 으로 꺼낼 수 있게 된다.   
+
+
 
 
 
