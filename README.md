@@ -1,7 +1,7 @@
 # Spring Security Study Repository
 > 인프런 스프링 시큐리티 강좌를(백기선님) 학습하고 정리한 내용입니다.
 
-## [섹션 0. 스프링 시큐리티: 폼 인증](#섹션-0.-스프링-시큐리티:-폼-인증)
+# [섹션 0. 스프링 시큐리티: 폼 인증](#섹션-0.-스프링-시큐리티:-폼-인증)
 * [스프링 웹 프로젝트 만들기](#스프링-웹-프로젝트-만들기)
 * [스프링 시큐리티 연동](#스프링-시큐리티-연동)
 * [스프링 시큐리티 설정하기](#스프링-시큐리티-설정하기)
@@ -11,7 +11,7 @@
 * [스프링 시큐리티 테스트 1부](#스프링-시큐리티-테스트-1부)
 * [스프링 시큐리티 테스트 2부](#스프링-시큐리티-테스트-2부)
 
-## [섹션 1. 스프링 시큐리티: 아키텍처](#섹션-1.-스프링-시큐리티:-아키텍처)
+# [섹션 1. 스프링 시큐리티: 아키텍처](#섹션-1.-스프링-시큐리티:-아키텍처)
 * [SecurityContextHolder와 Authentication](#SecurityContextHolder와-Authentication)
 * [AuthenticationManager와 Authentication](#AuthenticationManager와-Authentication)
 * [ThreadLocal](#ThreadLocal)
@@ -24,7 +24,7 @@
 * [ExceptionTranslationFilter](#ExceptionTranslationFilter)
 * [스프링 시큐리티 아키텍처 정리](#스프링-시큐리티-아키텍처-정리)
 
-## [섹션 2. 웹 애플리케이션 시큐리티](#섹션-2.-웹-애플리케이션-시큐리티)
+# [섹션 2. 웹 애플리케이션 시큐리티](#섹션-2.-웹-애플리케이션-시큐리티)
 * [스프링 시큐리티 ignoring() 1부](#스프링-시큐리티-ignoring()-1부)
 * [스프링 시큐리티 ignoring() 2부](#스프링-시큐리티-ignoring()-2부)
 * [Async 웹 MVC를 지원하는 필터: WebAsyncManagerIntegrationFilter](#Async-웹-MVC를-지원하는-필터:-WebAsyncManagerIntegrationFilter)
@@ -47,7 +47,7 @@
 * [토큰 기반 인증 필터 : RememberMeAuthenticationFilter](#토큰-기반-인증-필터-:-RememberMeAuthenticationFilter)
 * [커스텀 필터 추가하기](#커스텀-필터-추가하기)
 
-## [섹션 3. 스프링 시큐리티 그밖에](#섹션-3.-스프링-시큐리티-그밖에)
+# [섹션 3. 스프링 시큐리티 그밖에](#섹션-3.-스프링-시큐리티-그밖에)
 * [타임리프 스프링 시큐리티 확장팩](#타임리프-스프링-시큐리티-확장팩)
 * [sec 네임스페이스](#sec-네임스페이스)
 * [메소드 시큐리티](#메소드-시큐리티)
@@ -56,9 +56,9 @@
 * [스프링 시큐리티 마무리](#스프링-시큐리티-마무리)
 * [ 함께 학습하면 좋은 로드맵](#-함께-학습하면-좋은-로드맵)
 
-## 섹션 0. 스프링 시큐리티: 폼 인증
+# 섹션 0. 스프링 시큐리티: 폼 인증
 
-### 스프링 시큐리티 연동
+## 스프링 시큐리티 연동
 
 * 스프링 부트 환경에서 스프링 시큐리티 추가 방법 (maven)
     * ```maven
@@ -69,7 +69,7 @@
       ```
 
 
-#### 스프링 시큐리티의 의존성 추가 시 일어나는 일들
+# 스프링 시큐리티의 의존성 추가 시 일어나는 일들
 * 서버가 기동되면 스프링 시큐리티의 초기화 작업 및 보안 설정이 이루어진다
 * 별도의 설정이나 구현을 하지 않아도 기본적인 웹 보안 기능이 현재 시스템에 연동되어 작동함
     1. `모든 요청은 인증이 되어야 자원에 접근이 가능하다`
@@ -96,7 +96,7 @@
 
 ---
 
-### 스프링 시큐리티 설정하기
+## 스프링 시큐리티 설정하기
 
 스프링 시큐리티를 설정할 때는, 보통 `WebSecurityConfigurerAdapter` 를 상속 받은 configure 클래스를 새로 작성 한다.
 ```java
@@ -127,7 +127,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 * formLogin() : 폼 로그인을 사용할 것이다
 * and() : 메서드 체이닝을 이용해서 연속으로 설정
   
-### 스프링 시큐리티 커스터마이징: 인메모리 유저 추가
+## 스프링 시큐리티 커스터마이징: 인메모리 유저 추가
 
 * `UserDetailsServiceAutoConfiguration` 클래스
   * 이 클래스를 열어보면 우리가 어떻게 커스텀 할지 힌트를 얻을 수 있다.
@@ -165,7 +165,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   * PasswordEncoderFactories클래스의 
   * createDelegatingPasswordEncoder에 정의되어 있는 PasswordEncoder 종류를 보자 
   * 
-### 스프링 시큐리티 커스터마이징: JPA 연동
+## 스프링 시큐리티 커스터마이징: JPA 연동
 
 * JPA 의존성 추가
 ```MAVEN
@@ -214,8 +214,8 @@ public class AccountService implements UserDetailsService {
   * 스프링 시큐리티의 `User` 클래스의 Builder를 이용해서 UserDetails를 만들 수 있다. 
 
 
-## UserDetailService에 인증 정보 등록하는법 
-##### 명시적으로 Security Config에 정의하는법
+# UserDetailService에 인증 정보 등록하는법 
+## 명시적으로 Security Config에 정의하는법
 
 * 1. UserDetailsService를 구현한 Service클래스를 정의
 ```java
@@ -271,9 +271,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 <br>
 
-### 스프링 시큐리티 커스터마이징: PasswordEncoder
+## 스프링 시큐리티 커스터마이징: PasswordEncoder
 
-> #### 비밀번호는 평문이 아닌 단방향 알고리즘으로 인코딩해서 저장해야 한다
+> # 비밀번호는 평문이 아닌 단방향 알고리즘으로 인코딩해서 저장해야 한다
 
 회원가입을 하는 과정에 패스워드를 암호화 하는데  
 
@@ -284,7 +284,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
  
 * 다양한 패스워드 인코딩을 지원한다. 
   
-* #### Password Encoder 종류
+* # Password Encoder 종류
     * BCryptPasswordEncoder
     * NoOpPasswordEncoder
     * Pbkdf2PasswordEncoder
@@ -298,9 +298,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
  }
 ```
 
-### 스프링 시큐리티 테스트 1부
+## 스프링 시큐리티 테스트 1부
 
-### `이 강좌에서는 JUnit4 기반으로 테스트를 작성!!!`
+## `이 강좌에서는 JUnit4 기반으로 테스트를 작성!!!`
 
 * https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#test-mockmvc
 
@@ -346,7 +346,7 @@ public void admin_user() throws Exception {
   
 <br>
 
-### 어나니머스 유저가 접근할 때 사용하는 어노테이션 `@WithAnonymousUser`
+## 어나니머스 유저가 접근할 때 사용하는 어노테이션 `@WithAnonymousUser`
 
 ```java
 @Test
@@ -359,7 +359,7 @@ public void index_anonymous() throws Exception {
 ```
 <br>
 
-### 유저를 직접 설정(Mocking)하여 유저 접근
+## 유저를 직접 설정(Mocking)하여 유저 접근
 ```java
 @Test
 @WithMockUser(username = "youngsoo", roles = "USER")
@@ -372,7 +372,7 @@ public void index_user_youngsoo() throws Exception {
 * `@WithMockUser()` 어노테이션 
     * username, roles, authorities, password 등 설정 가능 
 
-### 직접 어노테이션을 커스텀 할 수도 있다.
+## 직접 어노테이션을 커스텀 할 수도 있다.
 
 ```java
 @Retention(RetentionPolicy.RUNTIME)
@@ -390,9 +390,9 @@ public void index_user_youngsoo() throws Exception {
 }
 ```
 ---
-### 스프링 시큐리티 테스트 2부
+# 스프링 시큐리티 테스트 2부
 
-#### 폼 로그인 테스트 방법
+# 폼 로그인 테스트 방법
 ```java
 @Transactional
 @Test
@@ -420,86 +420,208 @@ private Account createUser(String username, String password) {
 
 * 인증에 실패하는걸 확인하려면 `unauthenticated()`를 이용하면 된다. 
 
+---
+
+# 섹션 1. 스프링 시큐리티: 아키텍처
+![](img/2020-12-31-21-16-11.png)
+1. 웹으로부터 요청이 들어오면 서블릿 필터 중 DeligatingFilterProxy 를 통해 들어온다.
+
+  (DeligatingFilterProxy 는 스프링부트를 사용할 때 자동적으로 등록된다)
+
+2. 1번에서 특정한 Bean (SpringSecurityFilterChain) 에 필터 기능을 위임하여 스프링 시큐리티에
+
+   내장된 15가지 필터들을 사용하게 된다. (FilterChainProxy 를 통해)
+
+3. 2번의 체인의 필터들은 WebScurity, HttpSecurity 를 사용하면서 만들어진다.
+   WebSecurityConfigurerAdater 를 상속하는 SecurityConfig 파일에서 우리 프로젝트에 맞는
+
+   security 설정을 해주면 내장된 필터들에 설정들이 자동적으로 반영된다.
 
 
-## 섹션 1. 스프링 시큐리티: 아키텍처
+--- 
+> # Authentication (인증)
+> # Authorization (인가)
 
-### SecurityContextHolder와 Authentication
+## SecurityContextHolder와 Authentication
+https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#core-components
 
-### AuthenticationManager와 Authentication
 
-### ThreadLocal
+* ## SecurityContextHolder
+  - SecurityContext 제공, 기본적으로 ThreadLocal을 사용한다.
+  - ThreadLocal : 한 쓰레드 내에서 share 하는 저장소
+  - 
+* ## SecurityContext
+  - Authentication 제공.  
 
-### Authentication과 SecurityContextHodler
+> 우리가 어떤 애플리케이션에서 인증을 거치고 나면 그 인증된 사용자 정보를 Principal 이라고 하는데,  
+> 이 Principal 정보를 Authentication 이라는 객체에 `담아서` 관리를 하고,  
+> Authentication는 SecurityContext에, SecurityContext는 SecurityContextHolder로 감싸져 있다. 
 
-### 스프링 시큐리티 필터와 FilterChainProxy
+## 범위 : `SecurityContextHolder(SecurityContext[Authentication])`
 
-### DelegatingFilterProxy와 FilterChainProxy
+<img src = "img/2020-12-31-21-19-25.png" width ="250" height="250">
 
-### AccessDecisionManager 1부
+## Authentication -(인증 객체)
+- `Principal`과 `GrantAuthority` 제공.
+- SecurityContextHolder.getContext().getAuthentication(); 로 꺼낼 수 있다
 
-### AccessDecisionManager 2부
+## Principal - (누구 객체 )
+- “누구"에 해당하는 정보.
+- 객체는 `UserDetails 타입`. 
+  - authentication.getPrincipal() 메서드로 꺼내면 `Object` 타입이지만,  
+    사실은 `UserDetails`, `User` 타입이다.  
+- authentication.getPrincipal()로 꺼낼 수 있다.
+- UserDetailsService를 구현한 서비스에서 리턴한 객체
 
-### FilterSecurityInterceptor
+```java
+@Service
+public class AccountService implements UserDetailsService {
 
-### ExceptionTranslationFilter
+    @Override
+    public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+        //.... 생략
+    }
+}
 
-### 스프링 시큐리티 아키텍처 정리
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-## 섹션 2. 웹 애플리케이션 시큐리티
+    @Autowired AccountService accountService;
 
-### 스프링 시큐리티 ignoring() 1부
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(accountService); // << 여기서 리턴한 객체 
+    }
+}
+```
 
-### 스프링 시큐리티 ignoring() 2부
+## GrantAuthority - (권한 객체)
+- “ROLE_USER”, “ROLE_ADMIN”등 Principal이 가지고 있는 “권한”을 나타낸다.
+- 인증 이후, 인가 및 권한 확인할 때 이 정보를 참조한다.
+- 권한은 여러가지를 가질 수 있다.
 
-### Async 웹 MVC를 지원하는 필터: WebAsyncManagerIntegrationFilter
+## UserDetails 
+- 애플리케이션이 가지고 있는 유저 정보와 스프링 시큐리티가 사용하는 Authentication 객체 사이의 어댑터.
 
-### 스프링 시큐리티와 @Async
+## UserDetailsService
+- 유저 정보를 UserDetails 타입으로 가져오는 DAO (Data Access Object) 인터페이스.
+- 유저 정보를 UserDetails 타입으로 가져오는 DAO (Data Access Object) 인터페이스.
 
-### SecurityContext 영속화 필터: SecurityContextPersistenceFilter
+* ##  폼을 통하여 로그인 할때 들어오는 정보를 디버그 하면 다음과 같다
 
-### 시큐리티 관련 헤더 추가하는 필터: HeaderWriterFilter
+```
+// authentication 객체
+authentication = "UsernamePasswordAuthenticationToken" 
+ - Principal= org.springframework.security.core.userdetails.User 
+ - credentials = null
+ - authorities = {Collections$UnmodifiableRandomAccessList@10828}  size = 1
+ - details = {WebAuthenticationDetails@10833} 
+ - authenticated = true
 
-### CSRF 어택 방지 필터: CsrfFilter
+// principal 객체 
+principal ="org.springframework.security.core.userdetails.User" 
+ - password = null
+ - username = "youngsoo"
+ - authorities = {Collections$UnmodifiableSet@10854}  size = 1
+ - accountNonExpired = true
+ - accountNonLocked = true
+ - credentialsNonExpired = true
+ - enabled = true
+ 
+// authroites
+authorities = {Collections$UnmodifiableRandomAccessList@10713}  size = 1
+ - 0 = {SimpleGrantedAuthority@10871} "ROLE_USER"
+ - role = "ROLE_USER"
+```
 
-### CSRF 토큰 사용 예제
+> 객체 이름은 = , 멤버 필드는 -
 
-### 로그아웃 처리 필터: LogoutFilter
+--- 
 
-### 폼 인증 처리 필터: UsernamePasswordAuthenticationFilter
+## AuthenticationManager와 Authentication
+### 스프링 시큐리티에서 인증(Authentication)은 `AuthenticationManager`가 한다
+AuthenticationManager는 authenticate 메서드 하나밖에 없다.
 
-### 로그인/로그아웃 폼 페이지 생성해주는 필터: DefaultLogin/LogoutPageGeneratingFilter
+> Authentication authenticate(Authentication authentication) throws AuthenticationException;
 
-### 로그인/로그아웃 폼 커스터마이징
+* 인자로 받은 Authentication​이 `​유효한 인증인지 확인​`하고 `​Authentication 객체를 리턴​`한다.
+* 인증을 확인하는 과정에서 비활성 계정, 잘못된 비번, 잠긴 계정 등의 에러를 던질 수 있다
 
-### Basic 인증 처리 필터: BasicAuthenticationFilter
 
-### 요청 캐시 필터: RequestCacheAwareFilter
 
-### 시큐리티 관련 서블릿 스팩 구현 필터: SecurityContextHolderAwareRequestFilter
+## ThreadLocal
 
-### 익명 인증 필터: AnonymousAuthenticationFilter
+## Authentication과 SecurityContextHodler
 
-### 세션 관리 필터: SessionManagementFilter
+## 스프링 시큐리티 필터와 FilterChainProxy
 
-### 인증/인가 예외 처리 필터: ExceptionTranslationFilter
+## DelegatingFilterProxy와 FilterChainProxy
 
-### 인가 처리 필터: FilterSecurityInterceptor
+## AccessDecisionManager 1부
 
-### 토큰 기반 인증 필터 : RememberMeAuthenticationFilter
+## AccessDecisionManager 2부
 
-### 커스텀 필터 추가하기
+## FilterSecurityInterceptor
 
-## 섹션 3. 스프링 시큐리티 그밖에
+## ExceptionTranslationFilter
 
-### 타임리프 스프링 시큐리티 확장팩
+## 스프링 시큐리티 아키텍처 정리
 
-### sec 네임스페이스
+# 섹션 2. 웹 애플리케이션 시큐리티
 
-### 메소드 시큐리티
+## 스프링 시큐리티 ignoring() 1부
 
-### @AuthenticationPrincipal
+## 스프링 시큐리티 ignoring() 2부
 
-### 스프링 데이터 연동
+## Async 웹 MVC를 지원하는 필터: WebAsyncManagerIntegrationFilter
 
-### 스프링 시큐리티 마무리
+## 스프링 시큐리티와 @Async
+
+## SecurityContext 영속화 필터: SecurityContextPersistenceFilter
+
+## 시큐리티 관련 헤더 추가하는 필터: HeaderWriterFilter
+
+## CSRF 어택 방지 필터: CsrfFilter
+
+## CSRF 토큰 사용 예제
+
+## 로그아웃 처리 필터: LogoutFilter
+
+## 폼 인증 처리 필터: UsernamePasswordAuthenticationFilter
+
+## 로그인/로그아웃 폼 페이지 생성해주는 필터: DefaultLogin/LogoutPageGeneratingFilter
+
+## 로그인/로그아웃 폼 커스터마이징
+
+## Basic 인증 처리 필터: BasicAuthenticationFilter
+
+## 요청 캐시 필터: RequestCacheAwareFilter
+
+## 시큐리티 관련 서블릿 스팩 구현 필터: SecurityContextHolderAwareRequestFilter
+
+## 익명 인증 필터: AnonymousAuthenticationFilter
+
+## 세션 관리 필터: SessionManagementFilter
+
+## 인증/인가 예외 처리 필터: ExceptionTranslationFilter
+
+## 인가 처리 필터: FilterSecurityInterceptor
+
+## 토큰 기반 인증 필터 : RememberMeAuthenticationFilter
+
+## 커스텀 필터 추가하기
+
+# 섹션 3. 스프링 시큐리티 그밖에
+
+## 타임리프 스프링 시큐리티 확장팩
+
+## sec 네임스페이스
+
+## 메소드 시큐리티
+
+## @AuthenticationPrincipal
+
+## 스프링 데이터 연동
+
+## 스프링 시큐리티 마무리
