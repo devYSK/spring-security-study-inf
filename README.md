@@ -269,11 +269,33 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 > UserDetailsService 타입의 Bean으로 등록만 되있으면 알아서 가져다 쓴다.  
 > PasswordEncorder도 마찬가지. 
 
-
-
-
-
+<br>
 ### 스프링 시큐리티 커스터마이징: PasswordEncoder
+
+> #### 비밀번호는 평문이 아닌 단방향 알고리즘으로 인코딩해서 저장해야 한다
+
+회원가입을 하는 과정에 패스워드를 암호화 하는데  
+
+보통 `PasswordEncoder`를 Bean으로 등록하고 서비스나 도메인 계층에서 비밀번호를 암호화 한다.
+
+* 스프링 시큐리티5에서 권장하는 PassowrdEncoder
+* PasswordEncoderFactories.createDelegatingPasswordEncoder()
+* 다양한 패스워드 인코딩을 지원한다. 
+  
+* #### Password Encoder 종류
+    * BCryptPasswordEncoder
+    * NoOpPasswordEncoder
+    * Pbkdf2PasswordEncoder
+    * ScryptPasswordEncoder
+    * StandardPasswordEncoder
+ 
+```java
+ @Bean
+ public PasswordEncoder passwordEncoder() {
+     return PasswordEncoderFactories createDelegatingPasswordEncoder();
+ }
+```
+
 
 ### 스프링 시큐리티 테스트 1부
 

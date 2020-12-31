@@ -2,6 +2,7 @@ package com.ys.security.account;
 
 
 import lombok.Data;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -22,7 +23,7 @@ public class Account {
 
     private String role;
 
-    public void encodePassword() {
-        this.password = "{noop}" + password;
+    public void encodePassword(PasswordEncoder passwordEncoder) {
+        this.password = passwordEncoder.encode(password);
     }
 }
