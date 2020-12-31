@@ -270,6 +270,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 > PasswordEncorder도 마찬가지. 
 
 <br>
+
 ### 스프링 시큐리티 커스터마이징: PasswordEncoder
 
 > #### 비밀번호는 평문이 아닌 단방향 알고리즘으로 인코딩해서 저장해야 한다
@@ -280,6 +281,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 * 스프링 시큐리티5에서 권장하는 PassowrdEncoder
 * PasswordEncoderFactories.createDelegatingPasswordEncoder()
+ 
 * 다양한 패스워드 인코딩을 지원한다. 
   
 * #### Password Encoder 종류
@@ -296,10 +298,129 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
  }
 ```
 
-
 ### 스프링 시큐리티 테스트 1부
 
+### `이 강좌에서는 JUnit4 기반으로 테스트를 작성!!!`
+
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#test-mockmvc
+
+* Spring-Security-Test 의존성 추가
+  ```java
+  <dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+  ```
+  *  테스트에서 사용할 기능을 제공하기 때문에 Test 스콥이 적절
+
+@AutoConfigureMockMvc 를 사용하면 MockMvc 테스트를 진행할 수 있다
+
+```java
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+public class SpringBootTest {
+    @Test
+    public void index_user() throws Exception {
+        mockMvc.perform(get("/")
+                .with(user("youngsoo").roles("USER")))// 이러한 가짜 유저가 있다 하고 요청을 보내는것
+                .andDo(print())
+                .andExpect(status().isOk());
+
+    }
+}
+```
+* with(user("name").roles("USER)) 
+  * 가짜 유저를 mocking 하여 요청을 한다.  
+```java
+ @Test
+public void admin_user() throws Exception {
+    mockMvc.perform(get("/admin")
+            .with(user("youngsoo").roles("USER")))// 이러한 가짜 유저가 있다 하고 요청을 보내는것
+            .andDo(print())
+            .andExpect(status().isForbidden());
+}
+```
+* USER 권한을 가진 유저가 admin에 접근하면 foridden 응답이 온다.
+  
+<br>
+
+### 어나니머스 유저가 접근할 때 사용하는 어노테이션 `@WithAnonymousUser`
+
+```java
+@Test
+@WithAnonymousUser
+public void index_anonymous() throws Exception {
+    mockMvc.perform(get("/"))
+            .andDo(print())
+            .andExpect(status().isOk());
+}
+```
+<br>
+
+### 유저를 직접 설정(Mocking)하여 유저 접근
+```java
+@Test
+@WithMockUser(username = "youngsoo", roles = "USER")
+public void index_user_youngsoo() throws Exception {
+    mockMvc.perform(get("/"))
+            .andDo(print())
+            .andExpect(status().isOk());
+}
+```
+* `@WithMockUser()` 어노테이션 
+    * username, roles, authorities, password 등 설정 가능 
+
+### 직접 어노테이션을 커스텀 할 수도 있다.
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@WithMockUser(username = "youngsoo", roles = "USER")
+public @interface WithUser {
+}
+```
+
+> 다음과 같이 사용할 수 있다. 
+```java
+@Test
+@WithUser // <<<
+public void index_user_youngsoo() throws Exception {
+... 
+}
+```
+---
 ### 스프링 시큐리티 테스트 2부
+
+#### 폼 로그인 테스트 방법
+```java
+@Transactional
+@Test
+public void login() throws Exception {
+    String username = "youngsoo";
+    String password = "123";
+    
+    Account user = createUser(username, password);
+    mockMvc.perform(formLogin().user(user.getUsername()).password(password))
+            .andExpect(authenticated());
+}
+
+private Account createUser(String username, String password) {
+    Account account = new Account();
+    account.setUsername(username);
+    account.setPassword(password);
+    account.setRole("USER");
+    return accountService.createNew(account);
+}
+
+```
+
+* 레포지토리에 Account를 생성하고 formLogin() 메서드를 이용하여 인증하면  
+  authenticated()로 인증 결과를 알 수 있다. 
+
+* 인증에 실패하는걸 확인하려면 `unauthenticated()`를 이용하면 된다. 
+
+
 
 ## 섹션 1. 스프링 시큐리티: 아키텍처
 
