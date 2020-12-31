@@ -167,6 +167,112 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   * 
 ### 스프링 시큐리티 커스터마이징: JPA 연동
 
+* JPA 의존성 추가
+```MAVEN
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+```
+* h2 추가 
+```
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+</dependency>
+```
+
+```java
+@Service
+@RequiredArgsConstructor
+public class AccountService implements UserDetailsService {
+
+    private final AccountRepository accountRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+
+        Account account = accountRepository.findByUsername(s);
+
+        if (account == null) {
+            throw new UsernameNotFoundException(s);
+        }
+
+        return User.builder()
+                .username(account.getUsername())
+                .password(account.getPassword())
+                .roles(account.getRole())
+                .build();
+    }
+
+}
+```
+
+* UserDetailService 인터페이스
+  * DAO를 가지고 와서 유저 정보를 인증하는데 쓰인다 
+  * username을 으로 해당하는 정보를 가져와서 UserDetails로 리턴하는것.   
+  * 스프링 시큐리티의 `User` 클래스의 Builder를 이용해서 UserDetails를 만들 수 있다. 
+
+
+## UserDetailService에 인증 정보 등록하는법 
+##### 명시적으로 Security Config에 정의하는법
+
+* 1. UserDetailsService를 구현한 Service클래스를 정의
+```java
+@Service
+@RequiredArgsConstructor
+public class AccountService implements UserDetailsService {
+
+    private final AccountRepository accountRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+
+        Account account = accountRepository.findByUsername(s);
+
+        if (account == null) {
+            throw new UsernameNotFoundException(s);
+        }
+
+        return User.builder()
+                .username(account.getUsername())
+                .password(account.getPassword())
+                .roles(account.getRole())
+                .build();
+    }
+    ... 생략
+}
+```
+
+* 2. Security Config의 AuthenticationManagerBuilder 인자를 받는 configure 메소드에서 서비스를 등록
+```java
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    AccountService accountService;
+
+    ... 생략
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(accountService);
+
+    }
+}
+
+```
+
+> 명시적으로 AuthenticationManagerBuilder에 등록하지 않아도  
+> UserDetailsService 타입의 Bean으로 등록만 되있으면 알아서 가져다 쓴다.  
+> PasswordEncorder도 마찬가지. 
+
+
+
+
+
 ### 스프링 시큐리티 커스터마이징: PasswordEncoder
 
 ### 스프링 시큐리티 테스트 1부
