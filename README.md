@@ -629,15 +629,113 @@ authorities = {Collections$UnmodifiableRandomAccessList@10713}  size = 1
 > principal이 되어 authentication 객체가 되고  
 > SecurityContextHolder.getContext().getAuthentication 으로 꺼낼 수 있게 된다.   
 
-
-
-
-
+---
 ## ThreadLocal
+
+Java.lang 패키지에서 제공하는 쓰레드 범위 변수. 즉, 쓰레드 수준의 데이터 저장소.
+* 같은 쓰레드 내에서만 공유.
+
+* 따라서 같은 쓰레드라면 해당 데이터를 메소드 매개변수로 넘겨줄 필요 없이 get으로 꺼낼 수 있따. 
+  
+* `SecurityContextHolder의 기본 전략.`
+    * SecurityContext를 ThreadLocal에 갖고 있어서 공유가 가능하다. 
+
+```java
+public class AccountContext {
+    private static final ThreadLocal<Account> ACCOUNT_THREAD_LOCAL = new ThreadLocal<>();
+
+    public static void setAccount(Account account) {
+        ACCOUNT_THREAD_LOCAL.set(account);
+    }
+    public static Account getAccount() {
+        return ACCOUNT_THREAD_LOCAL.get();
+    }
+}
+```
+
+AccountContext.getAccount()로 어디서든 꺼낼 수 있다. 
+
+---
 
 ## Authentication과 SecurityContextHodler
 
+AuthenticationManager가 인증을 마친 뒤 리턴 받은 Authentication 객체의 행방은??
+
+-> SecurityContextHolder에 들어가서 애플리케이션 전반에 사용할 수 있게 된다. 
+
+`UsernamePasswordAuthenticationFilter` 와   
+`SecurityContextPersisenceFilter` 가  
+Authentication을 SecurityContextHold에 넣어준다. 
+
+
+### UsernamePasswordAuthenticationFilter
+* 폼 인증을 처리하는 시큐리티 필터
+* 인증된 Authentication 객체를 SecurityContextHolder에 넣어주는 필터
+  
+* SecurityContextHolder.getContext().setAuthentication(authentication)
+
+
+### SecurityContextPersisenceFilter
+* SecurityContext를 HTTP session에 캐시(기본 전략)하여 여러 요청에서 Authentication을 공유하는 필터.
+  
+* SecurityContextRepository를 교체하여 세션을 HTTP session이 아닌 다른 곳에 저장하는
+것도 가능하다.
+  * HttpSession이 날라가면 저장되었떤 인증 정보도 날라간다. 
+
+AuthenticationManager를 사용하는 부분은 UsernamePasswordAuthenticationFilter이다.
+UsernamePasswordAuthenticationFilter에서 Authentication 객체를  SecurityContextHolder에 넣는다. 
+
+UsernamePasswordAuthenticationFilter에서 인증이 이루어지고   
+SecurityContextHolder에 authentication이 저장이 되고 SecurityContextPersitenceFilter에서 Http session에 authentictication을 캐시한다
+
+---
+
 ## 스프링 시큐리티 필터와 FilterChainProxy
+* 스프링 시큐리티가 제공하는 필터들 - 클릭해서 조회
+  1. [WebAsyncManagerIntegrationFilter](#Async-웹-MVC를-지원하는-필터:-WebAsyncManagerIntegrationFilter)
+  2. [`SecurityContextPersistenceFilter`](#SecurityContext-영속화-필터:-SecurityContextPersistenceFilter) < 
+  3. [HeaderWriterFilter](#시큐리티-관련-헤더-추가하는-필터:-HeaderWriterFilter)
+  4. [CsrfFilter](#CSRF-어택-방지-필터:-CsrfFilter)
+  5. [LogoutFilter](#로그아웃-처리-필터:-LogoutFilter)
+  6. [`UsernamePasswordAuthenticationFilter`](#폼-인증-처리-필터:-UsernamePasswordAuthenticationFilter) <
+  7. [DefaultLoginPageGeneratingFilter](#로그인/로그아웃-폼-페이지-생성해주는-필터:-DefaultLogin/LogoutPageGeneratingFilter)
+  8. [DefaultLogoutPageGeneratingFilter](#로그인/로그아웃-폼-페이지-생성해주는-필터:-DefaultLogin/LogoutPageGeneratingFilter)
+  9. [BasicAuthenticationFilter](#Basic-인증-처리-필터:-BasicAuthenticationFilter)
+  10. [RequestCacheAwareFilter](#요청-캐시-필터:-RequestCacheAwareFilter)
+  11. [SecurityContextHolderAwareRequestFilter](#시큐리티-관련-서블릿-스팩-구현-필터:-SecurityContextHolderAwareRequestFilter)
+  12. [AnonymousAuthenticationFilter](#익명-인증-필터:-AnonymousAuthenticationFilter)
+  13. [SessionManagementFilter](#세션-관리-필터:-SessionManagementFilter)
+  14. [ExceptionTranslationFilter](#ExceptionTranslationFilter)
+  15. [FilterSecurityInterceptor](#FilterSecurityInterceptor)
+
+이 모든 필터는 ​FilterChainProxy​클래스가 호출한다.
+
+![](img/2021-01-01-21-38-02.png)
+* 필터 목록을 선택할 때 SeicurityFilterChain이라는 목록에서 선택한다. 
+
+```java
+public class FilterChainProxy extends GenericFilterBean {
+   ... 생략
+   private List<Filter> getFilters(HttpServletRequest request) { // filter 목록 가져오기
+    for (SecurityFilterChain chain : filterChains) {
+        if (chain.matches(request)) {
+            return chain.getFilters();
+        }
+    }
+    return null;
+    } 
+   ... 생략
+}
+```
+* filter의 목록을 가져오는 getFilters()
+
+* filter 목록의 구성은 public class SecurityConfig extends 
+  WebSecurityConfigurerAdapter
+
+a. WebSecurityConfigurerAdapter 상속 객체가 여럿일 때 @Order
+b. http.antMatcher()
+
+
 
 ## DelegatingFilterProxy와 FilterChainProxy
 
