@@ -920,11 +920,94 @@ WebSecurity를 가지고 FilterChainProxy를 만들어 필터 처리를 위임�
         * WebExpressionVoter(AccessDecisionVoters)
           * SecurityExpressionHandler
 
+참고
+* https://spring.io/guides/topicals/spring-security-architecture
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#overall-architecture
+
 --- 
 
-
-
 # 섹션 2. 웹 애플리케이션 시큐리티
+WebSecurity의 ignoring()을 사용해서 `시큐리티 필터 적용을 제외할 요청을 설정`할 수 있다. 
+
+* #### configure(WebSecurity web)
+```java
+@Override
+public void configure(WebSecurity web) throws Exception {
+    web.ignoring()
+                .mvcMatchers("/favicon.ico"); // (1)번 
+    web.ignoring()
+       .requestMatchers(PathRequest.toStaticResources()
+                                    .atCommonLocations());// (2)번
+    }
+```
+* 정적 자원 요청 같은 것들도 다 여러개의 필터를 거치는데,  
+   `1번` 처럼 설정하면 필터를 거치지 않아서 속도가 조금 더 빨라진다.    
+  (당연히 저런 요청 하나 하나 다 필터 여러개를 거치면 속도가 느려진다.)
+
+## 그러나!
+* 매번 스태틱 리소스들을 일일히 하나씩 다 적어두기 귀찮기 때문에 스프링 부트는 다음을 제공한다. -> `PathRequest` (2)
+  
+* 스프링 부트가 제공하는 PathRequest를 사용해서 `정적 자원 요청`을 스프링 시큐리티 필터를 적용하지 않도록 설정.
+
+* `CommonLocations`은 5개의 자원에 대해 필터를 무시하도록 한다.
+    ```java
+    // StaticRespourceLocation.java (enum)
+    public enum StaticResourceLocation {
+        CSS(new String[]{"/css/**"}),
+        JAVA_SCRIPT(new String[]{"/js/**"}),
+        IMAGES(new String[]{"/images/**"}),
+        WEB_JARS(new String[]{"/webjars/**"}),
+        FAVICON(new String[]{"/favicon.*", "/*/icon-*"});
+        ...
+    }
+    ```
+
+* 이렇게도 사용 가능 하다. 결과는 같지만 `똑같지 않다.`
+  * ```java
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                .mvcMatchers("/", "/info", "/account/**").permitAll()
+                .mvcMatchers("/admin").hasRole("ADMIN")
+                .mvcMatchers("user").hasRole("USER")
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll();
+    ```
+* [`전자(configure(WebSecurity web))를 사용하자.!`](#configure(WebSecurity-web))  
+
+
+* ignoring() 뒤에다가 어떤 메소드 체이닝을 걸든 거치는 필터 목록은 없어진다(0개가 된다)
+    * 방법이 매우 다양하다. 
+
+* web.ignoring()
+
+    * .requestMatchers()
+
+    [requestMatchers docs](#https://docs.spring.io/spring-security/site/docs/4.2.13.RELEASE/apidocs/org/springframework/security/config/annotation/web/builders/HttpSecurity.html#requestMatchers--)
+
+
+    * .requestMatcher(RequestMatcher matcher)
+
+    * .mvcMatchers(String mvcPatterns)
+
+    * .antMatchers(String antPatterns)
+
+    * .regexMatchers(String regexPatterns)
+
+* PathRequest
+
+  * org.springframework.boot.autoconfigure.security.servlet.PathRequest  
+    Spring Boot가 제공하는 PathRequest를 사용해서 정적 지원 요청을 필터를 적용하지 않도록 설정.
+
+* http.authorizeRequests() .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+  * 위의 web.ignoring()와 같은 결과이지만   
+    security filter가 적용된다 차이가 있다. 
+
+* 정적 / 동적 resource에 따른 처리방식.
+
+  * 동적 resource는 http.authorizeRequests()로 처리하는 것을 권장.
+  
+  * 정적 resource는 WebSecurity.ignore()를 권장하며 예외적인 정적 자원 (인증이 필요한 정적자원이 있는 경우)는 http.authorizeRequests()를 사용할 수 있습니다.
+
 
 ## 스프링 시큐리티 ignoring() 1부
 
