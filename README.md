@@ -670,6 +670,8 @@ Authentication을 SecurityContextHold에 넣어준다.
 
 ### UsernamePasswordAuthenticationFilter
 * 폼 인증을 처리하는 시큐리티 필터
+ 
+* AuthenticationManager를 이용해서 인증한다. 
 * 인증된 Authentication 객체를 SecurityContextHolder에 넣어주는 필터
   
 * SecurityContextHolder.getContext().setAuthentication(authentication)
@@ -677,7 +679,7 @@ Authentication을 SecurityContextHold에 넣어준다.
 
 ### SecurityContextPersisenceFilter
 * SecurityContext를 HTTP session에 캐시(기본 전략)하여 여러 요청에서 Authentication을 공유하는 필터.
-  
+
 * SecurityContextRepository를 교체하여 세션을 HTTP session이 아닌 다른 곳에 저장하는
 것도 가능하다.
   * HttpSession이 날라가면 저장되었떤 인증 정보도 날라간다. 
@@ -691,6 +693,17 @@ SecurityContextHolder에 authentication이 저장이 되고 SecurityContextPersi
 ---
 
 ## 스프링 시큐리티 필터와 FilterChainProxy
+
+* FilterChainProxy는 요청(HttpServletRequest)에 따라 적합한 SecurityFilterChain을 사용
+* 기본 전략으로 DefaultSecurityFilterChain을 사용
+* DefaultSecurityFilterChain는 Filter 리스트를 가지고 있다
+* SecurityFilterChain을 여러개 만들고 싶으면 SecurityConfig 클래스를 여러개 만든다
+* 이 때 SecurityConfig가 상충할 수 있으니 Order 어노테이션을 통해 우선순위를 지정한다
+* Filter 개수는 SecurityConfig 설정에 따라 달라진다
+* FilterChainProxy는 필터를 호출하고 실행한다
+
+
+
 * 스프링 시큐리티가 제공하는 필터들 - 클릭해서 조회
   1. [WebAsyncManagerIntegrationFilter](#Async-웹-MVC를-지원하는-필터:-WebAsyncManagerIntegrationFilter)
   2. [`SecurityContextPersistenceFilter`](#SecurityContext-영속화-필터:-SecurityContextPersistenceFilter) < 
@@ -711,7 +724,15 @@ SecurityContextHolder에 authentication이 저장이 되고 SecurityContextPersi
 이 모든 필터는 ​FilterChainProxy​클래스가 호출한다.
 
 ![](img/2021-01-01-21-38-02.png)
+
+* 필터 목록에 있는 필터들을 순서대로 실행(호출)한다. 
+
 * 필터 목록을 선택할 때 SeicurityFilterChain이라는 목록에서 선택한다. 
+
+
+이 목록들이 만들어지고, 커스터마이징 되는 지점이 SecurityConfig 이다
+
+SecurityConfig의 config에서 SecurityFilterChain을 만든다 
 
 ```java
 public class FilterChainProxy extends GenericFilterBean {
@@ -732,20 +753,128 @@ public class FilterChainProxy extends GenericFilterBean {
 * filter 목록의 구성은 public class SecurityConfig extends 
   WebSecurityConfigurerAdapter
 
-a. WebSecurityConfigurerAdapter 상속 객체가 여럿일 때 @Order
-b. http.antMatcher()
+* a. WebSecurityConfigurerAdapter 상속 객체가 여럿일 때 @Order어노테이션으로 순서를 정한다  
+  * 여러 SecurityConfig 클래스가 있을 때 어떤 설정 클래스가 먼저일지 정하는것. 
 
 
+* b. http.antMatcher()
 
 ## DelegatingFilterProxy와 FilterChainProxy
 
+* filter : 앞뒤로 특정한일들을 할 수 있는 어떤 요청을 처리하는 필터 클래스들. 
+
+DelegatingFilterProxy
+* DelegatingFilterProxy는 스프링 시큐리티가 모든 애플리케이션 요청을 감싸게 해서 모든 요청에 보안이 적용되게 하는 서블릿필터
+  
+* 일반적인 서블릿 필터.
+* 서블릿 필터 처리를 스프링에 들어있는 빈으로 위임하고 싶을 때 사용하는 서블릿 필터.
+  * ### 자기가 직접 처리하는게 아니고 다른 필터에게 자기가 해야 할 일을 위임한다.
+ 
+* 타겟 빈 이름을 설정한다.
+* 스프링 부트 없이 스프링 시큐리티 설정할 때는  
+  `AbstractSecurityWebApplicationInitializer`를 사용해서 등록.
+
+* 스프링 부트를 사용할 때는 자동으로 등록 된다. (SecurityFilterAutoConfiguration)
+ 
+FilterChainProxy
+
+* 보통 “springSecurityFilterChain” 이라는 이름의 빈으로 등록된다
+
+![](img/2021-01-02-13-26-33.png)
+* [DelegatingFilterProxy가 FilterChainProxy에게 작업을 위임한다.](#자기가-직접-처리하는게-아니고-다른-필터에게-자기가-해야-할-일을-위임한다.)
+   
+* 서블릿 컨테이너에는 DelegatingFilterProxy `하나`만 등록되어있고 filter 호출 시 applicationContext내 `filterChainProxy를 호출`해서 security처리를 한다.
+
+--- 
+
 ## AccessDecisionManager 1부
+AccessControl 또는 Authorization 라고 부른다
+
+이미 인증을 거친 사용자가 특정한 서버에 리소스에 접근을 할 때,  
+그게 웹 요청이든 메소드 call 이든 그 것을 허용할 것인가?  
+유효한 요청인가를 판단하는 인터페이스. - `인가`를 하는 인터페이스
+
+Access Control 결정을 내리는 인터페이스로, 기본 구현체 3가지를 제공한다.
+* AffirmativeBased​: 여러 Voter(투표자)중에 한명이라도 허용하면 허용. 기본 전략.
+
+* ConsensusBased: 다수결
+
+* UnanimousBased: 만장일치
+
+AccessDecisionVoter
+* 해당 Authentication이 특정한 Object에 접근할 때 필요한 ConfigAttributes를 만족하는지 확인한다.
+* WebExpressionVoter​: 웹 시큐리티에서 사용하는 기본 구현체, ROLE_Xxxx가
+매치하는지 확인. (USER, ADMIN 등등)
+* RoleHierarchyVoter: 계층형 ROLE 지원. ADMIN > MANAGER > USER
+* ...
+---
 
 ## AccessDecisionManager 2부
+AccessDecisionManager 또는 Voter를 커스터마이징 하는 방법
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+   public SecurityExpressionHandler expressionHandler() {
+        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
+        roleHierarchy.setHierarchy("ROLE_ADMIN > ROLE_USER");
+        // 어드민은 유저보다 상위니 유저가 할 수 있는건 어드민도 할 수 있다.
+        DefaultWebSecurityExpressionHandler handler = new
+                DefaultWebSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                .mvcMatchers("/", "/info", "/account/**").permitAll()
+                .mvcMatchers("/admin").hasRole("ADMIN")
+                .mvcMatchers("/user").hasRole("USER")
+                .anyRequest().authenticated()
+                .expressionHandler(expressionHandler()); // <<
+        http.formLogin();
+        http.httpBasic();
+    }    
+    ....
+}
+```
+RoleHierarchyImpl로 계층 권한을 구현하고 
+시큐리티 익스프레션 핸들러를 설정한다. 
+
+--- 
 
 ## FilterSecurityInterceptor
 
+* AccessDecisionManager를 사용하여 Access Control 또는 예외 처리 하는 필터.  
+대부분의 경우 FilterChainProxy에 제일 마지막 필터로 들어있다
+
+* 인증이 된 상태에서 특정 리소스에 접근할 수 있는지 Role을 확인함
+
+![](img/2021-01-02-15-36-09.png)
+
+- 인증이 된 상태에서 최종적으로 마지막에 검토하는 필터 
+
+--- 
+
 ## ExceptionTranslationFilter
+필터 체인에서 발생하는 AccessDeniedException과 AuthenticationException을 처리하는 필터
+
+AuthenticationException(인증 예외) 발생 시 
+
+* AuthenticationEntryPoint 실행
+  
+* AbstractSecurityInterceptor 하위 클래스(예, FilterSecurityInterceptor)에서 발생하는 예외만 처리.
+
+* 그렇다면 UsernamePasswordAuthenticationFilter에서 발생한 인증 에러는?
+
+AccessDeniedException 발생 시
+
+* 익명 사용자라면 > AuthenticationEntryPoint 실행
+
+* 익명 사용자가 아니면 >  AccessDeniedHandler에게 위임
+
 
 ## 스프링 시큐리티 아키텍처 정리
 
