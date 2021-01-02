@@ -795,6 +795,7 @@ AccessControl 또는 Authorization 라고 부른다
 유효한 요청인가를 판단하는 인터페이스. - `인가`를 하는 인터페이스
 
 Access Control 결정을 내리는 인터페이스로, 기본 구현체 3가지를 제공한다.
+### Access Control 확인 전략
 * AffirmativeBased​: 여러 Voter(투표자)중에 한명이라도 허용하면 허용. 기본 전략.
 
 * ConsensusBased: 다수결
@@ -861,7 +862,7 @@ RoleHierarchyImpl로 계층 권한을 구현하고
 ## ExceptionTranslationFilter
 필터 체인에서 발생하는 AccessDeniedException과 AuthenticationException을 처리하는 필터
 
-AuthenticationException(인증 예외) 발생 시 
+AuthenticationException(인증 예외, 권한이 요구되는 페이지에 권한없이 접근할 때) 발생 시 
 
 * AuthenticationEntryPoint 실행
   
@@ -871,12 +872,57 @@ AuthenticationException(인증 예외) 발생 시
 
 AccessDeniedException 발생 시
 
-* 익명 사용자라면 > AuthenticationEntryPoint 실행
+* 익명 사용자라면 > AuthenticationEntryPoint 실행 (로그인 페이지로 이동)
 
 * 익명 사용자가 아니면 >  AccessDeniedHandler에게 위임
 
+---
 
-## 스프링 시큐리티 아키텍처 정리
+# 스프링 시큐리티 아키텍처 정리
+![](img/2021-01-02-16-39-16.png)
+
+서블릿 컨테이너에 요청이 들어오면, DeligatingFilterProxy가  
+WebSecurity를 가지고 FilterChainProxy를 만들어 필터 처리를 위임한다.
+
+인증에 관해서는 AuthenticationManager를 사용하고,  
+인가(Access Control)에 관해서는 AccessDecisionManager를 사용한다. 
+
+인증에 관해서는 AuthenticationManager의 구현체로 ProviderManager를 사용
+* ProviderManager는 다른 여러 AuthenticationProvider를 이용해서 인증을 처리
+    * 그중에 DaoAuthenticationProvider를 사용
+
+    * UserDetailsSerivce를 이용하여 읽어온 데이터에서 유저정보를 사용해서 인증을한다.
+
+
+* 인증이 성공한다면 Authentication 정보를 SecurityContextHolder와 세션에  
+  넣어놓고 APP 전반에 걸쳐 사용. 
+
+세션에 저장된 Authentication 정보가 SecurityContextPersistenFilter에 의해 읽힘.
+
+인증이 됬다면, 최종적으로 인가(Authorization)를 처리하는 FilterSecurityInterceptor 필터가 AccessDecisionManager를 사용해서 인가 처리를 한다.(Access Control) 
+  * 현재 Authentication이 내가 접근하려는 리소으에(url, 메서드) 접근할 때 적절한 권한(Role)을 가지고 있는가 확인 
+  * [권한 확인하는 전략](#Access-Control-확인-전략) 중 기본적으로 3가지 가 있는데 AffirmativeBased를 기본 전략으로 사용 
+  
+## <순서>
+
+* ## 인증 (AuthenticationManager)
+  * SecurityContextPersistenceFilter
+    * AuthenticationManager
+      * ProviderManager
+        * DaoAuthenticationProvider
+          * UserDetailService
+
+* ## 인가(AccessDecisionManager)
+
+  * FilterSecurityInterceptor
+    * AccessDecisionManager
+      * AffirmativeBased
+        * WebExpressionVoter(AccessDecisionVoters)
+          * SecurityExpressionHandler
+
+--- 
+
+
 
 # 섹션 2. 웹 애플리케이션 시큐리티
 
