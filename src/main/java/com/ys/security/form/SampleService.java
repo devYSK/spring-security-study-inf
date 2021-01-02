@@ -2,6 +2,8 @@ package com.ys.security.form;
 
 import com.ys.security.account.Account;
 import com.ys.security.account.AccountContext;
+import com.ys.security.common.SecurityLogger;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,4 +29,12 @@ public class SampleService {
 
 
     }
+
+    @Async
+    public void asyncService() {
+
+        SecurityLogger.log("Async Service");
+        System.out.println("Async Service is Called.");
+    }
+
 }

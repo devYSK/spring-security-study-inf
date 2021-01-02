@@ -929,6 +929,9 @@ WebSecurity를 가지고 FilterChainProxy를 만들어 필터 처리를 위임�
 # 섹션 2. 웹 애플리케이션 시큐리티
 WebSecurity의 ignoring()을 사용해서 `시큐리티 필터 적용을 제외할 요청을 설정`할 수 있다. 
 
+
+## 스프링 시큐리티 ignoring() 1부
+
 * #### configure(WebSecurity web)
 ```java
 @Override
@@ -943,6 +946,11 @@ public void configure(WebSecurity web) throws Exception {
 * 정적 자원 요청 같은 것들도 다 여러개의 필터를 거치는데,  
    `1번` 처럼 설정하면 필터를 거치지 않아서 속도가 조금 더 빨라진다.    
   (당연히 저런 요청 하나 하나 다 필터 여러개를 거치면 속도가 느려진다.)
+
+
+--- 
+
+## 스프링 시큐리티 ignoring() 2부
 
 ## 그러나!
 * 매번 스태틱 리소스들을 일일히 하나씩 다 적어두기 귀찮기 때문에 스프링 부트는 다음을 제공한다. -> `PathRequest` (2)
@@ -1004,26 +1012,234 @@ public void configure(WebSecurity web) throws Exception {
 
 * 정적 / 동적 resource에 따른 처리방식.
 
-  * 동적 resource는 http.authorizeRequests()로 처리하는 것을 권장.
+  * 동적 resource는 http.authorizeRequests()로 처리하는 것을 권장.        
+    configure(HttpSecurity http) 메서드
   
-  * 정적 resource는 WebSecurity.ignore()를 권장하며 예외적인 정적 자원 (인증이 필요한 정적자원이 있는 경우)는 http.authorizeRequests()를 사용할 수 있습니다.
+  * 정적 resource는 WebSecurity.ignore()를 권장하며 예외적인 정적 자원 (인증이 필요한 정적자원이 있는 경우)는 http.authorizeRequests()를 사용할 수 있다.
 
-
-## 스프링 시큐리티 ignoring() 1부
-
-## 스프링 시큐리티 ignoring() 2부
+---
 
 ## Async 웹 MVC를 지원하는 필터: WebAsyncManagerIntegrationFilter
 
+15개 정도의 시큐리티 필터들 중 가장 위에 (먼저) 있는 필터.
+
+스프링 MVC의 Async 기능(핸들러에서 Callable을 리턴할 수 있는 기능)을 사용할 때에도 `SecurityContext를 공유`하도록 도와주는 필터.
+  * 다른 쓰레드 간에 공유. 
+      
+* PreProcess: SecurityContext를 설정한다.
+
+* Callable: 비록 다른 쓰레드지만 그 안에서는 동일한 SecurityContext를 참조할 수 있다.
+
+* PostProcess: SecurityContext를 정리(clean up)한다.
+
+---
 ## 스프링 시큐리티와 @Async
 
+@Async를 사용한 서비스를 호출하는 경우
+
+* @Async 사용한 서비스 호출 시  
+  쓰레드가 다르기 때문에 (서비스는 하위 스레드를 생성)  
+  따라서 SecurityContext를 공유받지 못한다.
+
+  * getAuthentication()이나 getPrincipal()을 사용하지 못한다. 
+
+
+## `해결방법` 
+> SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL); 메서드 설정 
+
+* 어디까지 공유할 것인가 범위를 설정하는것.
+  * 기본은 쓰레드 로컬이지만, 설정을 변경할 수 있다.  
+
+* SecurityContext를 자식 쓰레드에도 공유하는 전략.
+
+* @Async를 처리하는 쓰레드에서도 SecurityContext를 공유받을 수 있다.
+* 보통 SecurityConfig 내에서 사용 . 
+
+참고
+* https://docs.oracle.com/javase/7/docs/api/java/lang/InheritableThreadLocal.html
+
+---
 ## SecurityContext 영속화 필터: SecurityContextPersistenceFilter
 
-## 시큐리티 관련 헤더 추가하는 필터: HeaderWriterFilter
+* 보통 필터 목록중 2번째에 등록된 필터
+* 여러 요청 간에 SecurityContextHolder를 공유할 수 있는 기능 제공 
+* 
 
+* SecurityContextRepository를 사용해서 기존의 SecurityContext를 읽어오거나 초기화 한다.
+  * 기본으로 사용하는 전략은 HTTP Session을 사용한다.
+    * HTTP Session에서 읽어오는것이 기본 전략.  
+  * Spring-Session​과 연동하여 세션 클러스터를 구현할 수 있다. (이 강좌에서는 다루지 않습니다.)
+ 
+* 우리가 만약 커스텀한 인증 필터를 만들어 넣고 싶다면  
+  `반드시 SecurityContextPersistenceFilter필터 뒤에 넣어야 한다!!!`.  
+![](img/2021-01-02-18-48-21.png)
+
+
+---
+## 시큐리티 관련 헤더 추가하는 필터: HeaderWriterFilter
+응답 헤더에 시큐리티 관련 `헤더를 추가`해주는 필터
+
+* XContentTypeOptionsHeaderWriter​: 마임 타입 스니핑 방어.
+  * >X-Content-Type-Options: nosniff   
+     이 헤더는 리소스를 다운로드 할때 해당 리소스의 MIMETYPE이 일치하지 않는 경우 차단을 할 수 있다. 
+      위 처럼 설정하는 경우 styleSheet는 MIMETYPE이 text/css와 일치할 때까지 styleSheet를 로드하지 않는다. 
+      또한 공격자가 다른 확장자(jpg)로 서버에 파일을 업로드 한 후 
+      script태그등의 src의 경로를 변경하여 script를 로드 하는 등의 공격을 막아준다.
+
+* XXssProtectionHeaderWriter​: 브라우저에 내장된 XSS 필터 적용.
+  * > 이 헤더는 공격자가 XSS공격을 시도할 때 브라우저의 내장 XSS Filter를 통해 공격을 방지할 수 있는 헤더
+      위 처럼 설정한 경우 브라우저가 XSS공격을 감지하면 자동으로 내용을 치환한다.
+      mode=block 유무에 따라 내용만 치환 하고 사용자화면에 보여주거나 페이지 로드 자체를 block할 수 있다.   
+     위 헤더는 브라우저의 내장 XSS Filter에 의해 처리 되므로 각 브라우저마다 처리 방식이 다를 수 있다.
+     모든 공격을 막을 수는 없기 때문에 추가적으로 Filter를 설정하여 방어해야 한다.
+     X-XSS-Protection: 1; mode=block
+     
+* CacheControlHeadersWriter​: 캐시 히스토리 취약점 방어.
+  * > 공격자가 브라우저의 히스토리를 통한 공격을 진행 할 수 있기 때문에 cache를 적용하지 않는다는 헤더 
+      Cache-Control: no-cache, no-store, max-age=0, must-revalidate  
+      Pragma: no-cache  
+      Expires: 0
+
+* HstsHeaderWriter: HTTPS로만 소통하도록 강제.
+  * > 이 헤더는 한번 https로 접속 하는 경우 이후의 모든 요청을 http로 요청하더라도 브라우저가 자동으로 https로 요청  
+      Strict-Transport-Security: max-age=31536000;includeSubDomains;preload   
+      https로 전송한 요청을 중간자가 가로채어 내용을 볼 수 있는(MIMT)기법을 클라이언트 레벨(브라우저)에서 차단   
+      또한 2014년 블랙햇 아시아 컨퍼런스에서 "Leonard Nve Egea"가 sslStrip+ 를 공개하면서  
+      서브도메인을 통해 우회할 수 있는 방법에 대해 includeSubDomains 를 추가하여 차단할수 있다.
+
+* XFrameOptionsHeaderWriter​: clickjacking 방어
+  * > 이 헤더는 한번 https로 접속 하는 경우 이후의 모든 요청을 http로 요청하더라도 브라우저가 자동으로 https로 요청  
+     Strict-Transport-Security: max-age=31536000;includeSubDomains;preload  
+     https로 전송한 요청을 중간자가 가로채어 내용을 볼 수 있는(MIMT)기법을 클라이언트 레벨(브라우저)에서 차단  
+    또한 2014년 블랙햇 아시아 컨퍼런스에서 "Leonard Nve Egea"가 sslStrip+ 를 공개하면서 서브도메인을 통해 우회할 수   
+    있는 방법에 대해 includeSubDomains 를 추가하여 차단할수 있습니다. 
+
+
+// Response의 헤더
+```
+// Resopnse Header
+HTTP/1.1 200
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+Expires: 0
+X-Frame-Options: DENY
+Content-Type: text/html;charset=UTF-8
+Content-Language: ko-KR
+Transfer-Encoding: chunked
+Date: Wed, 22 Aug 2019 17:18:41 GMT
+Keep-Alive: timeout=60
+Connection: keep-alive
+```
+*** 출처 - [참고 사이트](#https://cyberx.tistory.com/171)  
+  * [참고 사이트](#https://github.com/GentleDot/spring-security-demo)
+
+![](img/2021-01-02-20-37-34.png)
+
+참고
+* X-Content-Type-Options:
+  * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+* Cache-Control:
+  * https://www.owasp.org/index.php/Testing_for_Browser_cache_weakness_(OTGAUTHN-006)
+* X-XSS-Protection
+  * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+  * https://github.com/naver/lucy-xss-filter
+* HSTS
+  * https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html
+* X-Frame-Options○ 
+  * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+
+* https://cyberx.tistory.com/171
+
+--- 
 ## CSRF 어택 방지 필터: CsrfFilter
 
+CSRF (Cross-site request forgery) : 원치 않는 요청을 임의대로 만들어 보내는것. 
+
+CSRF 어택 방지 필터
+* 인증된 유저의 계정을 사용해 악의적인 변경 요청을 만들어 보내는 기법.
+
+* https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)
+
+* https://namu.wiki/w/CSRF
+
+* CORS를 사용할 때 특히 주의 해야 함.
+  * 타 도메인에서 보내오는 요청을 허용하기 때문에...
+  * https://en.wikipedia.org/wiki/Cross-origin_resource_sharing
+
+![](img/2021-01-02-21-26-53.png)
+
+의도한 사용자만 리소스를 변경할 수 있도록 허용하는 필터
+* `CSRF 토큰을 사용하여 방지.`
+
+![](img/2021-01-02-21-27-19.png)
+
+* public final class CsrfFilter extends OncePerRequestFilter
+  * request.setAttribute(CsrfToken.class.getName(), csrfToken)
+  * request.setAttribute(csrfToken.getParameterName(), csrfToken)
+  * if (!csrfToken.getToken().equals(actualToken)) {}
+
+* CSRF 토큰을 사용하여 방지.
+
+
+### CSRF 토큰 사용하지 않는 법 
+```JAVA
+// SecurityConfig 클래스 내 configure(HttpSecurity http) 메서드 
+ @Override
+    protected void configure(HttpSecurity http) throws Exception {
+         http.csrf().disable();
+    }
+```
+  * FilterChainProxy 클래스내의 필터를 확인해보면 CSRF 필터가 빠진 걸 확인 가능  
+
+
+## `폼기반 웹 페이지 애플리케이션에서는 반드시 사용하는 것이 좋다.`
+  * 특히 요청으로 리소스 변경 하는 경우 
+
+
 ## CSRF 토큰 사용 예제
+
+JSP에서 스프링 MVC가 제공하는 <form:form> 태그 또는  
+타임리프 2.1+ 버전을 사용할 때 폼에
+`CRSF 히든 필드`가 기본으로 생성 된다.
+
+* csrf token 없이 POST 회원가입 요청을 보내면 , `401 Unauthorized` 에러가 발생
+  * csrf 토큰 값이 없어서 폼 인증이 되지 않기 때문 .
+
+
+* CSRF 토큰 테스트
+```java
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class SignUpControllerTest {
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @Test
+    public void signUpForm() throws Exception {
+        mockMvc.perform(get("/signup"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("_csrf")));
+    }
+
+    @Test
+    public void processSignUp() throws Exception {
+        mockMvc.perform(post("/signup")
+                .param("username", "youngsoo3")
+                .param("password", "1234")
+                .with(csrf())) // csrf 토큰 포함하여 요청 전송 
+                .andDo(print())
+                .andExpect(status().is3xxRedirection());
+    }
+}
+```
+* TEST 상에서 csrf 설정이 없으면 403(forbidden) 되어 테스트가 실패.
+  * `.with(csrf()) 추가 필요.`
+* org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 
 ## 로그아웃 처리 필터: LogoutFilter
 

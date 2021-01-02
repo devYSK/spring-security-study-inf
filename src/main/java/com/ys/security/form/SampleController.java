@@ -2,12 +2,16 @@ package com.ys.security.form;
 
 import com.ys.security.account.AccountContext;
 import com.ys.security.account.AccountRepository;
+import com.ys.security.common.SecurityLogger;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.security.Principal;
+import java.util.concurrent.Callable;
 
 @Controller
 @RequiredArgsConstructor
@@ -57,5 +61,33 @@ public class SampleController {
         return "user";
     }
 
+    @GetMapping("/async-handler")
+    @ResponseBody
+    public Callable<String> asyncHandler() {
+
+        SecurityLogger.log("MVC");
+
+        return new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                SecurityLogger.log("Callable");
+                return "Async Handler";
+            }
+        };
+
+    }
+
+    @GetMapping("/async-service")
+    @ResponseBody
+    public String asyncService() {
+
+        SecurityLogger.log("MVC, before async service" );
+        sampleService.asyncService();
+        SecurityLogger.log("MVC, after async service" );
+
+
+        return "Async Service";
+
+    }
 
 }
