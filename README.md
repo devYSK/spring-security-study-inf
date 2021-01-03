@@ -1310,21 +1310,115 @@ http.formLogin()
 
 ```java
 http.formLogin()
-        .loginPage("/my-login-page");
+        .loginPage("/my-login-page")
+        .permitAll();
 ```
 * 이렇게 설정 하면 커스텀 페이지를 사용할 것이라고 선언한 거기 때문에  
   두 필터를 제공 해주지 않는다.  (필터 등록 x )
-    * DefaultLoginPageGenerateFilter 필터 등록이 안되있다
+    * DefaultLoginPageGeneratingFilter 필터 등록이 안되있다
     * 로그 아웃도 마찬가지. (DefaultLogoutPageGeneratingFilter)
     * 다른 필터들은 등록 되어있다.  
-
-
+    * 반드시 .permitAll()을 해줘야 한다 (모든 사용자 접근 가능하게)
+      
+> 어떻게 해야 할 것인가? 
+> 다음 참조 -> [링크](#로그인/로그아웃-폼-커스터마이징)
+ 
 ![](img/2021-01-03-15-30-36.png)
+
 ---
 
 ## 로그인/로그아웃 폼 커스터마이징
+문서 : https://docs.spring.io/spring-security/site/docs/current/reference/html5/#jc-form
+
+* 시큐리티 설정 
+```java
+// SecurityConfig 클래스 내 메서드
+
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.formLogin()
+            .loginPage("/my-login-page")
+            .permitAll();
+    http.logout()
+            .logoutUrl("/my-logout")
+            .logoutSuccessUrl("/");
+}
+```
+
+* 커스텀 로그인 페이지 my-login-page.html
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<h1>Login</h1>
+<div th:if="${param.error}">
+    <div class="alert alert-danger">
+        Invalid username or password.
+    </div>
+</div>
+<form action="/my-login-page" th:action="@{/my-login-page}" method="post">
+    <p>Username: <input type="text" name="username" /></p>
+    <p>Password: <input type="password" name="password" /></p>
+    <p><input type="submit" value="login" /></p>
+</form>
+</body>
+</html>
+
+```
+
+* 커스텀 로그아웃 페이지 - my-logout-page.html
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Logout</title>
+</head>
+<body>
+<h1>Logout</h1>
+<form action="/my-logout" th:action="@{/my-logout}" method="post">
+    <p><input type="submit" value="logout" /></p>
+</form>
+</body>
+</html>
+```
+
+* 커스텀 로그인 / 로그아웃 Controller
+
+```java
+@Controller
+public class LogInOutController {
+    @GetMapping("/my-login-page")
+    public String loginForm() {
+        return "my-login-page";
+    }
+
+    @GetMapping("/my-logout-page")
+    public String logout() {
+        return "my-logout-page";
+    }
+
+}
+```
 
 
+
+![](img/2021-01-03-16-05-46.png)
+* 필터 목록을 보면 몇 필터가 빠진지 알 수 있다. 
+    * DefaultLoginPageGeneratingFilter -> x
+    * DefaultLogoutPageGeneratingFilter -> x
+
+* 커스텀한 로그인 페이지를 설정했기 때문에 필터가 사라진다
+  * 우리가 따로 구현해서 지정해 줘야 한다.  
+
+* 로그아웃 뷰도 없어지기 때문에 우리가 같이 만들어 줘야 한다. 
+
+* POST 요청은 스프링 시큐리티가 제공하는 UserNamePassowrdAuthenticationFItler가 처리 하도록 사용
+   
 ## Basic 인증 처리 필터: BasicAuthenticationFilter
 
 ## 요청 캐시 필터: RequestCacheAwareFilter

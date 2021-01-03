@@ -64,22 +64,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .mvcMatchers("user").hasRole("USER")
                 .anyRequest().authenticated()
                 .accessDecisionManager(accessDecisionManager());
-        http
-                .formLogin()
-                    .usernameParameter("my-username")
-                    .passwordParameter("my-password")
-                .and()
-                .httpBasic()
-        ;
 
         http.formLogin()
-                .loginPage("/my-login-page");
+                .loginPage("/my-login-page")
+                .permitAll();
 
         http.logout()
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
-
-                ;
+                .logoutUrl("/my-logout")
+                .logoutSuccessUrl("/");
 
 
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
