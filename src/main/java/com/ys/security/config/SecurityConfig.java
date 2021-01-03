@@ -66,9 +66,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDecisionManager(accessDecisionManager());
         http
                 .formLogin()
+                    .usernameParameter("my-username")
+                    .passwordParameter("my-password")
                 .and()
                 .httpBasic()
         ;
+
+        http.formLogin()
+                .loginPage("/my-login-page");
+
+        http.logout()
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/")
+
+                ;
 
 
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);

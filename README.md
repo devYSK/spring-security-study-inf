@@ -1241,13 +1241,89 @@ class SignUpControllerTest {
   * `.with(csrf()) 추가 필요.`
 * org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 
-## 로그아웃 처리 필터: LogoutFilter
+---
 
+## 로그아웃 처리 필터: LogoutFilter
+여러 LogoutHandler를 사용하여 로그아웃시 필요한 처리를 하며 이후에는
+LogoutSuccessHandler를 사용하여 로그아웃 후처리를 한다.
+
+LogoutHandler
+  * CsrfLogoutHandler
+  * SecurityContextLogoutHandler
+
+LogoutSuccessHandler
+  * SimplUrlLogoutSuccessHandler
+
+### 로그아웃 필터 설정
+
+```java
+http.logout()
+     .logoutUrl("/logout")       // logout 처리할 페이지 설정
+     .logoutSuccessUrl("/")      // logout 성공 시 redirect 페이지 설정
+     .addLogoutHandler()         // logout 시 부가적인 작업 설정 
+     .logoutSuccessHandler();    // logout 성공 시 부가적인 작업 설정
+     .invalidateHttpSession(true)// logout 시 HttpSession invalidated 
+     .deleteCookies()            // Cookie 기반 인증 사용 시 logout 할 때      Cookie 삭제
+     .logoutRequestMatcher()
+```
+
+* 기본적으로 2개의 logoutHandler 사용
+  * CsrfLogoutHandler
+  * SecurityContextLogoutHandler 
+
+![](img/2021-01-03-15-03-33.png)
+
+---
 ## 폼 인증 처리 필터: UsernamePasswordAuthenticationFilter
+폼 로그인을 처리하는 인증 필터
+
+* 사용자가 폼에 입력한 username과 password로 Authentcation을 만들고  
+   AuthenticationManager를 사용하여 인증을 시도한다.
+
+1.  AuthenticationManager (ProviderManager)는 여러 AuthenticationProvider를 사용하여 인증을 시도
+   
+2. 그 중에 DaoAuthenticationProvider는 UserDetailsServivce를 사용하여 UserDetails 정보를 가져오고
+3.  사용자가 입력한 password와 가져온 정보를 비교한다
+
+
+![](img/2021-01-03-15-19-00.png)
+
+--- 
 
 ## 로그인/로그아웃 폼 페이지 생성해주는 필터: DefaultLogin/LogoutPageGeneratingFilter
+스프링 시큐리티 기본 로그인 폼 페이지를 자동으로 생성해주는 필터
+
+* GET /login 요청을 처리하는 필터
+
+로그인 폼을 커스터마이징 할 수 있다. SecurityConfig 내의 configure 메서드
+```java
+// 폼 로그인 사용 시 기본 파라미터 이름에서 우리가 원하는 파라미터 이름으로 바꿀 수 있다.
+http.formLogin()
+ .usernameParameter("my-username")
+ .passwordParameter("my-password");
+```
+![](img/2021-01-03-15-33-10.png)
+
+
+## 우리가 만약 로그인 페이지를 커스텀 해서 사용할 것이면?
+시큐리티 설정 내에서 로그인 페이지를 따로 설정 해줘야 한다
+
+```java
+http.formLogin()
+        .loginPage("/my-login-page");
+```
+* 이렇게 설정 하면 커스텀 페이지를 사용할 것이라고 선언한 거기 때문에  
+  두 필터를 제공 해주지 않는다.  (필터 등록 x )
+    * DefaultLoginPageGenerateFilter 필터 등록이 안되있다
+    * 로그 아웃도 마찬가지. (DefaultLogoutPageGeneratingFilter)
+    * 다른 필터들은 등록 되어있다.  
+
+
+![](img/2021-01-03-15-30-36.png)
+---
 
 ## 로그인/로그아웃 폼 커스터마이징
+
 
 ## Basic 인증 처리 필터: BasicAuthenticationFilter
 
