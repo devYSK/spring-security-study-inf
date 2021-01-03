@@ -1443,12 +1443,14 @@ protected void configure(HttpSecurity http) throws Exception {
 ```
 
 * UsernamePasswordAuthenticationFilter와의 비교
+
 * |Http Basic|UsernamePassword|
   |--|--|
   |param : username, password| form|
   |Request Header에서 읽음| Form Request(요청)에서 읽음|
   |stateless context(인증상태를 저장하지 않음)| stateful (SessionRepository 캐시하여 context(인증상태) 저장|  
 
+<br>
 
 * BasicAuthenticationFilter.doFilterInternal 메소드 안에   
   this.rememberMeServices.loginSuccess(request, response, authResult);가  
@@ -1467,12 +1469,107 @@ protected void configure(HttpSecurity http) throws Exception {
 ---
 
 ## 요청 캐시 필터: RequestCacheAwareFilter
+RequestCacheAwareFilter.class 
+
+현재 요청과 관련 있는 캐시된 요청이 있는지 찾아서 적용하는 필터.
+* 캐시된 요청이 없다면, 현재 요청 처리
+* 캐시된 요청이 있다면, 해당 캐시된 요청 처리
+
+예)
+> 대시보드(로그인이 필요한 페이지) 페이지를 접속하려고 하면 로그인 페이지로 이동. (현재 인증 되지 않았기 때문. 이때 캐싱한다. )   
+> 로그인 페이지에서 로그인 인증을 수행하고 나면,   
+> RequestCacheAwareFilter에서 캐시한 요청(대시보드 페이지로 이동 요청)을 수행
+
+---
 
 ## 시큐리티 관련 서블릿 스팩 구현 필터: SecurityContextHolderAwareRequestFilter
 
+시큐리티 관련 서블릿 API를 구현해주는 필터
+* HttpServletRequest#authenticate(HttpServletResponse)
+* HttpServletRequest#login(String, String)
+* HttpServletRequest#logout()
+* AsyncContext#start(Runnable)
+
+---
+
 ## 익명 인증 필터: AnonymousAuthenticationFilter
+https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#anonymous
+
+아무도 인증하지 않은 요청인 경우
+현재 SecurityContext에 Authentication이 null이면 “익명 Authentication”을 만들어 넣어주고, null이 아니면 아무일도 하지 않는다.
+
+기본으로 만들어 사용할 “익명 Authentication” 객체를 설정할 수 있다
+ 
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.anonymous()
+            .principal()
+            .authorities()
+            .key()
+}
+```
+
+*  Authentication이 null이면 “Anonymous(익명) Authentication” 
+   `널 오브젝트 패턴` 객체를 생성하여 넣는다. 
+
+### 널 오브젝트 패턴 (Null Object pattern)
+* 널 오브젝트는 널이 아니다
+* Null 대신 Null의 성격이랑 비슷한 Object를 생성
+* 코드에서 NULL 체크를 하는게 아니라 NULL을 대변하는 객체를 넣는것
+
+참고
+* https://en.wikipedia.org/wiki/Null_object_pattern
+
+---
 
 ## 세션 관리 필터: SessionManagementFilter
+
+https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#session-mgmt
+
+세션 변조 방지 전략 설정: sessionFixation
+* 세션 변조: ​https://www.owasp.org/index.php/Session_fixation
+    * 공격자가 웹 사이트에 로그인해서 자기의 세션 아이디를 쿠키를 받아      
+      공격할 사람한테 보내서 그 세션 아이디를 가지고 서버를 헷갈리게 해서 정보를 탈취하는것  
+
+* 세션 변조 방지 설정
+  * http.sessionManagement().sessionFixation()      
+    * none() : 방지를 하지 않는다. 
+    * newSession() : 매번 새로운 세션을 만든다
+    * migrateSession() (서블릿 3.0- 컨테이너 사용시 기본값)
+    * changeSessionId()​ (서브릿 3.1+ 컨테이너 사용시 기본값)
+
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#nsa-session-management-attributes
+
+유효하지 않은 세션을 리다이렉트 시킬 URL 설정
+* http.sessionManagement()
+  * invalidSessionUrl()
+
+# 동시성 제어: maximumSessions
+* 추가 로그인을 막을지 여부 설정 (기본값, false)
+    * 기본적으로는 한 계정으로 여러 로그인 할 수 있게 설정 되어 있다.
+      
+    * http.sessionManagement().maximumSessions() : 세션 개수 설정
+    
+    * maxSessionsPreventsLogin() : 추가 로그인을 막을지 말지 설정 (default = false)
+      * 세션이 1개인데 `false로 두고` 다중 로그인을 하면 로그인이 되면서    
+        다른로그인 중이던 아이디는 세션이 해제되고 session expire라는 문구가 나온다.
+
+      *  반대로 `true로 두고` 다중 로그인을 시도하면 아예 로그인이 안된다 
+
+
+
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#nsa-concurrency-control
+
+세션 생성 전략: sessionCreationPolicy . 4가지 
+
+* http.sessionManagement().sessionCreationPolicy()
+  1. IF_REQUIRED (Default) : 필요할 때 session 생성
+  2. NEVER : Security에서는 session 생성 안하고 외부 session 사용
+  3. STATELESS : session 생성하지 않음. (정말 세션을 쓰고싶지 않다면 사용)
+     * REST API 등을 구현할 때 사용하는 전략  
+  4. ALWAYS
+
 
 ## 인증/인가 예외 처리 필터: ExceptionTranslationFilter
 
