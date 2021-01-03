@@ -1667,7 +1667,34 @@ http.authorizeRequests()
 ---
 
 ## 토큰 기반 인증 필터 : RememberMeAuthenticationFilter
+* 세션이 사라지거나 만료가 되더라도 쿠키 또는 DB를 사용하여 저장된 토큰 기반으로 인증을 지원하는 필터
+* 체크박스로 로그인 기억! 해놨을 때 명시적으로 로그아웃 하지 않는이상 계속 로그인 되있는 것
 
+* RememberMe 설정 
+```JAVA
+http.rememberMe()
+     .userDetailsService(accountService)  // UserDetailsSerivce인터페이스를 구현한 서비스 
+         .key("remember-me-sample");
+         .rememberMeParameter("rememberParam") // 파라미터 이름. default = remember-me
+         .tokenValiditySeconds() // 쿠키 유지 시간. default = 2주
+         .useSecureCookie() // HTTPS 접근만 쿠키 사용이 가능하도록 설정
+         .alwaysRemember()   // 항상 쿠키 생성, default = false
+```
+
+페이지에 접속하면 서버에서 세션이 생성되고 웹 브라우저 쿠키에 세션 아이디 정보(JSessionID)가 담긴다.   
+로그인을 하면 서버는 해당 세션을 인증된 세션으로 취급.
+
+사용자가 강제로 웹 브라우저 쿠키에서 세션 아이디를 삭제하게 되면,  
+인증된 세션이 아니기 때문에 서버는 다시 로그인 창으로 리다이렉트 된다.
+
+세션 아이디를 삭제하면 SecurityContextHolder에서 인증 정보를 가져올 수 없기에   
+서버는 인증되지 않은 사용자로 판단, 인증이 필요한 페이지나 리소스의 접속을 제한
+
+
+쿠키 플러그인
+* https://chrome.google.com/webstore/detail/editthiscookie/fngmhnnpilhplaeedifhccceomclgfbg?hl=en
+
+---
 
 ## 커스텀 필터 추가하기
 
