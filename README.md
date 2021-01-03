@@ -1570,8 +1570,54 @@ https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsin
      * REST API 등을 구현할 때 사용하는 전략  
   4. ALWAYS
 
-
+---
 ## 인증/인가 예외 처리 필터: ExceptionTranslationFilter
+
+https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#exceptiontranslation-filter
+
+### 인증, 인가 에러 처리를 담당하는 필터
+* AuthenticationEntryPoint
+* AccessDeniedHandler
+
+* try-catch 구문으로 감싸고 FilterSecurityInterceptor를 처리한다
+* FilterSecurityInterceptor는 AccessDecisionManager를 이용해서 인가 처리를 함
+* AuthenticationEntryPoint, AccessDeniedException 예외를 처리함
+    * AuthenticationException은 AuthenticationEntryPoint를 사용해서 예외처리 
+      * AuthenticationEntryPoint은 유저를 인증을 할 수 있게 끔 인증이 가능한 페이지로 보낸다. 
+     
+    * AccessDeniedException은 AccessDeniedHandler를 사용해서 처리한다. 
+      * 기본 처리는 403 에러  
+
+```java
+// 핸들러 없이. 서버 쪽 로그는 안남는다.
+http.exceptionHandling()
+            .accessDeniedPage("/access-denied");
+
+// 핸들러 구현. 서버 쪽 로그를 남길 수 있다.
+ http.exceptionHandling()
+            .accessDeniedHandler(new AccessDeniedHandler() {
+                @Override
+                public void handle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse,          
+                                   AccessDeniedException e) throws IOException, ServletException {
+                    UserDetails principal = (UserDetails) SecurityContextHolder.getContext()
+                                                                                .getAuthentication().getPrincipal();
+                    String username = principal.getUsername();
+                    System.out.println(username + " is denied to access " + httpServletRequest.getRequestURI());
+                    httpServletResponse.sendRedirect("/access-denied");
+                }
+            });
+// 람다 식으로 작성도 가능!! (어나니머스 객체 대신) 
+```
+* 액세스 디나이가 발생하면 어느 페이지를 보여 줄 것인가를 설정
+
+* 로그로 남겨 서버단에서 확인하려면 핸들러를 작성하면 된다. (누가 계속 비정상적인 접근을 하는 지 등)
+* 핸들러를 구현하려면 따로 클래스를 작성해서 빈으로 등록한 다음 설정하면 된다.
+    * http.exceptionHandling().accessDeniedHandler();
+
+ExceptionTranslationFitler와 FilterSecurityInterceptor랑은 밀접한 관계가 있다. 
+  * 필터 순서가 ExceptionTranslationFitler가 더 앞에 있어야 한다.
+
+---
 
 ## 인가 처리 필터: FilterSecurityInterceptor
 
