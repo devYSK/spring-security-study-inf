@@ -1698,6 +1698,35 @@ http.rememberMe()
 
 ## 커스텀 필터 추가하기
 
+```java
+//LoggingFilter.java 
+public class LoggingFilter extends GenericFilterBean {
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                         throws IOException, ServletException {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start(((HttpServletRequest)request).getRequestURI());
+        chain.doFilter(request, response);
+        stopWatch.stop();
+        logger.info(stopWatch.prettyPrint());
+    }
+}
+```
+* 필터 클래스 생성. 시간을 재고, 어떤 요청에서 온지 로그를 찍기위한 필터 
+
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.addFilterBefore(new LoggingFilter(), WebAsyncManagerIntegrationFilter.class); // 필터들 중 맨 앞으로
+}
+```
+* 필터 등록
+
+* 필터를 만드는 법은 다양한 방법이 있다. 
+* 그 중 이 방법은 GenericFilterBean을 상속받아서 구현 
+
 # 섹션 3. 스프링 시큐리티 그밖에
 
 ## 타임리프 스프링 시큐리티 확장팩
