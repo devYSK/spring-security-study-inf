@@ -1727,11 +1727,52 @@ protected void configure(HttpSecurity http) throws Exception {
 * 필터를 만드는 법은 다양한 방법이 있다. 
 * 그 중 이 방법은 GenericFilterBean을 상속받아서 구현 
 
+---
+
 # 섹션 3. 스프링 시큐리티 그밖에
 
 ## 타임리프 스프링 시큐리티 확장팩
+* https://github.com/thymeleaf/thymeleaf-extras-springsecurity/blob/3.0-master/README.markdown
 
+* 의존성 추가
+```
+<dependency>
+    <groupId>org.thymeleaf.extras</groupId>
+    <artifactId>thymeleaf-extras-springsecurity5</artifactId>
+</dependency>
+```
+
+* Authentication과 Authorization참조
+  * ### html에서..
+```html
+<div th:if="${#authorization.expr('isAuthenticated()')}">
+    <h2 th:text="${#authentication.name}"></h2>
+    <a href="/logout" th:href="@{/logout}">Logout</a>
+</div>
+<div th:unless="${#authorization.expr('isAuthenticated()')}">
+    <a href="/login" th:href="@{/login}">Login</a>
+</div>
+```
+* 스프링 부트를 쓰고 있으면 다른 설정이 필요없고 의존성만 추가 된다.
+
+---
 ## sec 네임스페이스
+* html에 Sec 네임스페이스 등록
+```html
+xmlns:sec="http://www.thymeleaf.org/extras/spring-security
+```
+
+* Sec 네임스페이스 사용하기
+```html
+<div sec:authorize="isAuthenticated()">
+    <h2 sec:authentication="name">Name</h2>
+    <a href="/logout" th:href="@{/logout}">Logout</a>
+</div>
+<div sec:authorize="!isAuthenticated()">
+    <a href="/login" th:href="@{/login}">Login</a>
+</div>
+```
+* [sec namespace 사용 안한 방법](#html에서..)
 
 ## 메소드 시큐리티
 
