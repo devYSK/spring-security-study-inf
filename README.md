@@ -1405,7 +1405,7 @@ public class LogInOutController {
 }
 ```
 
-
+* FilterChainProxy 내의 Filter 목록 디버그로 찍어 본 결과.
 
 ![](img/2021-01-03-16-05-46.png)
 * 필터 목록을 보면 몇 필터가 빠진지 알 수 있다. 
@@ -1419,7 +1419,52 @@ public class LogInOutController {
 
 * POST 요청은 스프링 시큐리티가 제공하는 UserNamePassowrdAuthenticationFItler가 처리 하도록 사용
    
+
+---
+
 ## Basic 인증 처리 필터: BasicAuthenticationFilter
+
+Basic 인증이란?
+* https://tools.ietf.org/html/rfc7617
+* 요청 헤더에 username와 password를 실어 보내면 브라우저 또는 서버가 그 값을 읽어서
+인증하는 방식. 
+  * 예) Authorization: Basic QWxhZGRpbjpPcGVuU2VzYW1l  
+       (keesun:123을 BASE 64)
+
+* 보통, 브라우저 기반 요청이 클라이언트의 요청을 처리할 때 자주 사용.
+
+* 보안에 취약하기 때문에 반드시 HTTPS를 사용할 것을 권장.
+
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http.basic();
+}
+```
+
+* UsernamePasswordAuthenticationFilter와의 비교
+* |Http Basic|UsernamePassword|
+  |--|--|
+  |param : username, password| form|
+  |Request Header에서 읽음| Form Request(요청)에서 읽음|
+  |stateless context(인증상태를 저장하지 않음)| stateful (SessionRepository 캐시하여 context(인증상태) 저장|  
+
+
+* BasicAuthenticationFilter.doFilterInternal 메소드 안에   
+  this.rememberMeServices.loginSuccess(request, response, authResult);가  
+  호출되는 부분이 있는데 여기에서 쿠기가 발급
+
+* postman을 이용해서 basic authentication을 실행한 결과       
+  SecurityContextPersistenceFilter finally 스코프에서 session에  
+  authentication 정보를 넣어 준다.
+
+* postman에서 basic authentication 후 발급 받은 쿠키만 있다면   
+  이후 다음 요청에 authorization basic 헤더 필드가 없어도 인증된 결과를  확인할 수 있다. 
+
+* statefull과 stateless의 차이는 인증 방법(basic, form)이 아니라   
+  http client의 차이
+
+---
 
 ## 요청 캐시 필터: RequestCacheAwareFilter
 
