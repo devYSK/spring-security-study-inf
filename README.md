@@ -1621,7 +1621,53 @@ ExceptionTranslationFitler와 FilterSecurityInterceptor랑은 밀접한 관계�
 
 ## 인가 처리 필터: FilterSecurityInterceptor
 
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#filter-security-interceptor
+
+* HTTP 리소스 시큐리티 처리를 담당하는 필터. 
+
+* `AccessDecisionManager를 사용하여 인가`를 처리한다.
+ 
+* HTTP 리소스 시큐리티 설정
+
+```java
+// SecurityConfig.class
+http.authorizeRequests()
+    .mvcMatchers("/", "/info", "/account/**", "/signup").permitAll()
+    .mvcMatchers("/admin").hasAuthority("ROLE_ADMIN")
+    .mvcMatchers("/user").hasRole("USER")
+    .anyRequest().authenticated()
+    .expressionHandler(expressionHandler());
+```
+
+* mvcMatches() : Spring MVC 패턴하고 매칭이 되는지. antPattern으로 폴 백 됨
+  * regexMatchers를 사용하거나 antMatchers도 사용 가능 
+* permitAll() : 모두에게 허용  
+* hasRole() : 권한이 있는지. Authority가 상위개념  
+* hasAuthority() : 권한이 있는지. Role의 상위개념 
+  * hasAuthority() 를 사용시 ROLE_를 붙여줘야 한다 ex) hasAuthority("ROLE_USER"); 
+   
+* anyRequest()
+  * .anonymous() : 익명 사용자에게만 접근할 수 있게 하는것
+    * 인증을 하고 접근하면 접근이 거부가 된다.  
+  
+  * .authenticated() : 인증이 되기만 하면 접근 가능
+  * .rememeberMe() : 리멤버 미 기능으로 인증한 사용자 접근 가능
+  * .fullyAuthenticated() : 리멤버 미로 인증이 된 사용자에게 다시 인증을 요구 
+    * 인증이 된 사용자도 한번 더 인증(로그인)을 요구하는것.  
+    * 가령 장바구니에서 주문할 때 다시 한번 더 인증을 확인하는거 
+  * .denyAll() : 아무것도 허용하지 않겠다. 
+  * .not() : 뒤에 조건이 아닌 경우 허용 ex) .not().anonymous() : 익명사용자가 아닌경우 허용 
+    
+![](img/2021-01-03-22-43-23.png)
+
+여기까지가 기본적으로 사용되는 15개의 필터 설명이였다. 
+
+추가적으로는 CORS나 Remember-ME 관련 필터 등록 가능하다. 
+
+---
+
 ## 토큰 기반 인증 필터 : RememberMeAuthenticationFilter
+
 
 ## 커스텀 필터 추가하기
 
