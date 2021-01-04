@@ -1960,6 +1960,56 @@ public String index2(Model model, @AuthenticationPrincipal(expression = "#this =
   ```
 * @AP를 메타 애노테이션으로 사용하여 커스텀 애노테이션을 만들어 쓸 수 있다
 
+---
+
 ## 스프링 데이터 연동
+* https://docs.spring.io/spring-security/site/docs/current/reference/html5/#data
+
+* @Query 애노테이션에서 SpEL로 principal 참조할 수 있는 기능 제공
+
+스프링 시큐리티 데이터 의존성 추가
+```
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-data</artifactId>
+    <version>${spring-security.version}</version>
+</dependency>
+```
+
+* @Query에서 principal 사용하기
+```java
+@Query("select b from Book b where b.author.id = ?#{principal.account.id}")
+List<Book> findCurrentUserBooks();
+```
+  * # principal 등으로 참조
+
+* 타임리프 리스트 참조 
+```html
+<tr th:each="book : ${books}">
+  <td><span th:text="${book.title}"> Title </span></td>
+</tr>
+```
+
+---
+
+## CORS와 CorsFilter
+[참조](#https://github.com/GentleDot/spring-security-demo#cors%EC%99%80-corsfilter)
 
 ## 스프링 시큐리티 마무리
+
+이번 강좌에서 다룬 내용
+* 스프링 시큐리티 아키텍처
+* 폼 기반 웹 애플리케이션 인증 기능
+* 로그인/로그아웃 페이지 커스터마이징
+* 여러 인증 관련 응답 헤더
+* CSRF
+* 세션 관리
+* 타임리프 연동
+* 스프링 데이터 연동
+
+다루지 않은 내용
+* ACL
+* WebSocket
+* OAuth 2.0
+* Reactive
+

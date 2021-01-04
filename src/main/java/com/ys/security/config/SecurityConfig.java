@@ -1,7 +1,7 @@
 package com.ys.security.config;
 
 import com.ys.security.account.AccountService;
-import com.ys.security.common.LoggingFilter;
+//import com.ys.security.common.LoggingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -71,7 +71,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        http.addFilterBefore(new LoggingFilter(), WebAsyncManagerIntegrationFilter.class); // 필터들 중 맨 앞으로
+//        http.addFilterBefore(new LoggingFilter(), WebAsyncManagerIntegrationFilter.class); // 필터들 중 맨 앞으로
 
 
         // ex) 루트로 오는 요청과 info로 오는 요청은 인증을 거치지 않아도 상관 없다는 설정

@@ -4,6 +4,8 @@ import com.ys.security.account.Account;
 import com.ys.security.account.AccountContext;
 import com.ys.security.account.AccountRepository;
 import com.ys.security.account.UserAccount;
+import com.ys.security.book.BookRepository;
+import com.ys.security.common.CurrentUser;
 import com.ys.security.common.SecurityLogger;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +24,7 @@ public class SampleController {
 
     private final SampleService sampleService;
     private final AccountRepository accountRepository;
+    private final BookRepository bookRepository;
 
     @GetMapping("/index2")
     public String index2(Model model, @AuthenticationPrincipal UserAccount userAccount) {
@@ -84,7 +87,7 @@ public class SampleController {
     @GetMapping("/user")
     public String user(Model model, Principal principal) {
         model.addAttribute("message", "Hello " + principal.getName());
-
+        model.addAttribute("books", bookRepository.findCurrentUserBooks());
         return "user";
     }
 
