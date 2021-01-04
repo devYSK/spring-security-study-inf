@@ -1,9 +1,12 @@
 package com.ys.security.form;
 
+import com.ys.security.account.Account;
 import com.ys.security.account.AccountContext;
 import com.ys.security.account.AccountRepository;
+import com.ys.security.account.UserAccount;
 import com.ys.security.common.SecurityLogger;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,6 +22,30 @@ public class SampleController {
 
     private final SampleService sampleService;
     private final AccountRepository accountRepository;
+
+    @GetMapping("/index2")
+    public String index2(Model model, @AuthenticationPrincipal UserAccount userAccount) {
+        if (userAccount == null)
+            model.addAttribute("message", "Hello Spring security");
+        else {
+            System.out.println(userAccount.getAccount().getUsername());
+            model.addAttribute("message", "Hello " + userAccount.getUsername());
+        }
+        return "index";
+    }
+
+
+    @GetMapping("/index3")
+    public String index2(Model model, @AuthenticationPrincipal(expression = "#this == 'anonymousUser ? null : account") Account userAccount) {
+        if (userAccount == null)
+            model.addAttribute("message", "Hello Spring security");
+        else {
+
+            model.addAttribute("message", "Hello " + userAccount.getUsername());
+        }
+        return "index";
+    }
+
 
     @GetMapping("/")
     public String index(Model model, Principal principal) {

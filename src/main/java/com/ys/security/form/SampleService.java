@@ -4,9 +4,11 @@ import com.ys.security.account.Account;
 import com.ys.security.account.AccountContext;
 import com.ys.security.common.SecurityLogger;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -14,20 +16,14 @@ import java.util.Collection;
 @Service
 public class SampleService {
 
+    @Secured("ROLE_USER")
     public void dashboard() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Object principal = authentication.getPrincipal();
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        Object credentials = authentication.getCredentials();//credentials : 자격
-        boolean authenticated = authentication.isAuthenticated();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-
-        Account account = AccountContext.getAccount();
-        System.out.println("=================");
-        System.out.println(account.getUsername());
-
-
-
+        System.out.println("============");
+        System.out.println(authentication);
+        System.out.println(userDetails.getUsername());
     }
 
     @Async

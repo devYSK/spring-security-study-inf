@@ -1757,7 +1757,7 @@ protected void configure(HttpSecurity http) throws Exception {
 
 ---
 ## sec 네임스페이스
-* html에 Sec 네임스페이스 등록
+* html에 `Sec `네임스페이스 등록 (Security 줄임말 인듯? )
 ```html
 xmlns:sec="http://www.thymeleaf.org/extras/spring-security
 ```
@@ -1774,9 +1774,191 @@ xmlns:sec="http://www.thymeleaf.org/extras/spring-security
 ```
 * [sec namespace 사용 안한 방법](#html에서..)
 
+--- 
 ## 메소드 시큐리티
 
+서비스 계층을 직접 호출할 때 사용하는 보안 기능
+  * 꼭 서비스가 아니여도 아무 Bean에 사용 가능 
+
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#jc-method
+* https://www.baeldung.com/spring-security-method-security
+    * 사용법이 꽤 자세하게 적혀 있다. 
+
+* @Configuration 클래스에 @EnableGlobalMethodSecurity 적용 
+  * @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true, jsr250Enabled = true) 
+    * 각 애노테이션들을 사용할라면 Enabled를 true로 해줘야한다
+
+
+```java
+@Service
+public class SampleService {
+
+    @Secured("ROLE_USER")
+    public void dashboard() {
+    ...
+    }
+}
+```
+* @Secured​ 와 ​ @RollAllowed  (둘이 비슷하다 RollAllowed는 자바 표준)
+  * 메소드호출 `이전에!` 권한을확인한다.
+  * 스프링EL을사용하지못한다
+
+  * @Secured 어노테이션을 붙이면 권한을 같이 줄 수 있다.
+  * 권한이 없으면 메서드 안으로 진입을 하지 못한다.
+  * 인가 에러가 난다. AccessDeniedException
+
+* @PreAuthorize​와 ​@PostAuthorize
+  * @PreAuthorize : 메소드 호출 이전 인가 확인 
+* 메소드호출 이전 @있다
+  * @PostAuthorize : 메소드 호출 이후 인가 확인
+    * 메소드의 리턴값을 파라미터로 사용 가능하다 
+* 이 둘은 `!스프링 EL 사용 가능! `
+
+
+* 메소드 시큐리티는 권한 이름이 다르면 상위 권한이여도 접근이 안된다 
+  * @Secured("USER")로 되있으면 Admin 권한을 가진 유저여도 접근이 안된다. 
+  * 계층형 구조를 이해 못한다. 
+  * SecurityConfig의 http를 설정해도 안된다. 웹용 시큐리티기 때문. 
+ 
+### 이 문제는 MethodSecurityConfig가 Hierarchy Role 모터를 사용할 수 있게 커스텀 해야한다. 
+* GlobalMethodSecurityConfiguration을 상속 받고 AccessDecisionManager를 커스텀.  
+```java
+@Configuration
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true,jsr250Enabled = true)
+public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+    @Override
+    protected AccessDecisionManager accessDecisionManager() {
+        RoleHierarchyImpl roleHierarchy = new RoleHierarchyImpl();
+        roleHierarchy.setHierarchy("ROLE_ADMIN > ROLE_USER"); // << 
+        AffirmativeBased accessDecisionManager = (AffirmativeBased)
+        super.accessDecisionManager();
+        accessDecisionManager.getDecisionVoters()
+                              .add(newRoleHierarchyVoter(roleHierarchy));
+        return accessDecisionManager;
+    }
+}
+
+```
+* ADMIN이 USER보다 상위 개념이라고 계층 설정 
+
+* 굳이 구현하고 싶지 않으면 여러개를 넣어주면 된다
+  * @Secured({"ROLE_USER, "ROLE_ADMIN"} )
+
+--- 
+
 ## @AuthenticationPrincipal
+
+* https://docs.spring.io/spring-security/site/docs/5.1.5.RELEASE/reference/htmlsingle/#mvc-authentication-principal
+
+* AuthenticationArgumentResolver가 제공하는 기능중에 매개변수로 Principal 객체를 받을 수 있다. 
+* 즉, 웹 MVC 핸들러 아규먼트로 Principal 객체를 받을 수 있다.
+
+```java
+@GetMapping("/")
+public String index(Model model, Principal principal) {
+    System.out.println(principal.getName());
+    ...
+}
+```
+* 이 Principal은 스프링 시큐리티가 제공하는 Principal이 아니고 자바 표준 Principal이다
+  * java.security.Principal  
+  * SecurityContextHolder안에 있는 Principal이 아니다!!! 
+
+> SecurityContextHolder안에 있는 `Principal`은 우리가 UserDetailsService를 구현한 구현체에서  
+> 리턴하는 `UserDetails 객체`이다.  
+
+* 이 Principal을 스프링 시큐리티 패키지로 받는 방법이 있다. 
+  * (스프링 시큐리티 패키지의 Principal 더 많은 기능을 제공하니까 ) 
+
+* 우리가 현재 로그인한 사용자의 정보를 참조하고 싶을 때 보통   
+  우리가 유저를 정의한 도메인 타입 클래스를 사용하고 싶어 한다 (Principal을 도메인 타입으로 ex) Account )
+
+* UserDetailsService 구현체에서 리턴하는 객체를 매개변수로 받을 수 있다.!!
+
+1. org.springframework.security.core.userdetails.User 를 상속받는 커스텀 클래스 생성
+  * 우리 유저들을 나타내는 도메인 객체를 생성자로 넘겨주고 상위 생성자를 호출한다* 
+    * ```java
+      public class UserAccount extends User {
+          private Account account;
+          public UserAccount(Account account) {
+              super(account.getUsername(), account.getPassword(), 
+                          List.of(new SimpleGrantedAuthority("ROLE_" + account.getRole())));
+              this.account = account;
+          }
+          public Account getAcount() {
+              return account;
+          }
+      }
+       ```
+    * 이 클래스가 이제 Principal이 되는것
+      
+2. UserDetailsService를 구현한 구현클래스에서 loadUserByUsername() 메소드에서 커스텀 인스턴스 리턴
+    * ```java
+      @Service
+      @RequiredArgsConstructor
+      public class AccountService implements UserDetailsService {
+      
+          private final AccountRepository accountRepository;
+          @Override
+          public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+              Account account = accountRepository.findByUsername(s);
+              if (account == null) {
+                  throw new UsernameNotFoundException(s);
+              }
+              return new UserAccount(account); // 
+          }
+      } 
+      ```  
+
+3. controller에서 스프링 시큐리티가 제공하는 @AuthenticationPrincipal로 우리 Principal을 받을 수 있다.
+  * Principal은 우리가 구현한 객체  
+* ```java
+  @GetMapping("/index2")
+  public String index2(Model model, @AuthenticationPrincipal UserAccount userAccount) {
+    if (userAccount == null)
+        model.addAttribute("message", "Hello Spring security");
+    else {
+        System.out.println(userAccount.getAccount().getUsername());
+        model.addAttribute("message", "Hello " + userAccount.getUsername());
+    }
+    return "index";
+  }  
+  ```
+
+
+
+### 커스텀 객체가 아닌 도메인 객체로도 받을 수 있다.
+```java
+@GetMapping("/index3")
+public String index2(Model model, @AuthenticationPrincipal(expression = "#this == 'anonymousUser ? null : account") 
+                                   Account userAccount) {
+    ...           
+}
+```           
+* expression을 사용하여 가져오면 된다
+ 
+* 익명 Authentication인 경우 (“anonymousUser”)에는 null 아닌 경우에는 account 필드를 사용한다.
+
+* Account를 바로 참조할 수 있다
+
+### 커스텀 어노테이션을 만들어 쓸 수도 있다 (더 줄일 수 있다.)
+
+* 커스텀 어노테이션 생성
+* ```java
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.PARAMETER)
+  @AuthenticationPrincipal(expression = "#this == 'anonymousUser' ? null : account")
+  public @interface CurrentUser {
+  } 
+  ```
+
+* ```java
+  @GetMapping("/")
+  public String index(Model model, @CurrentUser Account userAccount) {
+    ...           
+  }
+  ```
+* @AP를 메타 애노테이션으로 사용하여 커스텀 애노테이션을 만들어 쓸 수 있다
 
 ## 스프링 데이터 연동
 
